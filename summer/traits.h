@@ -9,15 +9,7 @@
 
 namespace summer {
     namespace traits {
-        template<typename HanaType>
-        struct HanaTraitsHelper {
-            static constexpr auto test(HanaType hanaType) -> typename decltype(boost::hana::typeid_(hanaType))::type;
-        };
 
-        template<typename HanaType, HanaType hanaType>
-        struct HanaTraits {
-            using Type = decltype(HanaTraitsHelper<HanaType>::test(hanaType));
-        };
     }
 }
 
