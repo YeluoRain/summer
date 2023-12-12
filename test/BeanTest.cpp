@@ -4,7 +4,7 @@
 
 #include "BeanTest.h"
 #include "TestClass.h"
-#include "dag.h"
+#include "Summer.h"
 
 using namespace boost;
 using namespace summer::dag;
@@ -14,7 +14,8 @@ auto beanResolverMap = hana::make_map(hana::make_pair(hana::type_c<AImpl>, hana:
                                       hana::make_pair(hana::type_c<CImpl>, hana::type_c<BeanResolverC>));
 
 auto beanVertexes = hana::to_tuple(hana::transform(hana::values(beanResolverMap), [](const auto &resolver) {
-    using ResolverType = typename decltype(hana::typeid_(resolver))::type;
+    using ResolverType = typename decltype(hana::typeid_(resolver)
+    )::type;
     return hana::type_c<graph::Vertex<ResolverType>>;
 }));
 
@@ -35,12 +36,12 @@ TEST_F(BeanTest, test_create_beanVertexes_success) {
 }
 
 TEST_F(BeanTest, test_generate_dependency_success) {
-    auto independentBeans = util::get_independent_beans(beanVertexes);
-    auto implementedMap = util::fill_implemented_map(hana::make_map(), independentBeans);
+    auto independentBeans = operation::GetIndependentBeans(beanVertexes);
+    auto implementedMap = operation::FillImplementedMap(hana::make_map(), independentBeans);
     auto expect = hana::make_map(hana::make_pair(hana::type_c<A>, hana::make_tuple(hana::type_c<AImpl>)));
     BOOST_HANA_ASSERT(expect == implementedMap);
 
-    auto nextMap = util::fill_implemented_map(implementedMap, beanVertexes);
+    auto nextMap = operation::FillImplementedMap(implementedMap, beanVertexes);
     auto expect2 =
             hana::make_map(hana::make_pair(hana::type_c<A>, hana::make_tuple(hana::type_c<AImpl>, hana::type_c<AImpl>)),
                            hana::make_pair(hana::type_c<B>, hana::make_tuple(hana::type_c<BImpl>)),
@@ -50,9 +51,9 @@ TEST_F(BeanTest, test_generate_dependency_success) {
 }
 
 TEST_F(BeanTest, test_remove_vertex_dependency) {
-    auto independentBeans = util::get_independent_beans(beanVertexes);
+    auto independentBeans = operation::GetIndependentBeans(beanVertexes);
     auto newBeans = hana::to_tuple(hana::difference(hana::to_set(beanVertexes), hana::to_set(independentBeans)));
-    auto removedDependencyBeans = util::remove_vertex_dependency(newBeans, independentBeans);
+    auto removedDependencyBeans = operation::RemoveVertexDependency(newBeans, independentBeans);
     auto getDependency = [](const auto &vertex) {
         using VertexType = typename decltype(hana::typeid_(vertex))::type;
         return VertexType::OutList;
@@ -91,9 +92,9 @@ TEST_F(BeanTest, test_get_all_independent_beans) {
                 auto vertexes = hana::at(context, hana::int_c<2>);
 
                 // 当前循环中找到的独立Bean
-                auto curIndependentVertexes = util::get_independent_beans(vertexes);
+                auto curIndependentVertexes = operation::GetIndependentBeans(vertexes);
                 // 将这些独立Bean加载到MAP TODO: 有问题
-                auto nextMap = util::fill_implemented_map(implementedMap, curIndependentVertexes);
+                auto nextMap = operation::FillImplementedMap(implementedMap, curIndependentVertexes);
                 auto nextIndependentVertexes = hana::concat(independentVertexes, curIndependentVertexes);
                 // std::cout << summer::print::to_string(implementedMap) << std::endl;
                 // std::cout << summer::print::to_string(nextMap) << std::endl;
@@ -101,14 +102,14 @@ TEST_F(BeanTest, test_get_all_independent_beans) {
                 // 将独立Bean移除后剩下的非独立Bean
                 auto restVertexes =
                         hana::to_tuple(hana::difference(hana::to_set(vertexes), hana::to_set(curIndependentVertexes)));
-                auto nextVertexes = util::remove_vertex_dependency(restVertexes, curIndependentVertexes);
+                auto nextVertexes = operation::RemoveVertexDependency(restVertexes, curIndependentVertexes);
                 return hana::make_tuple(nextIndependentVertexes, nextMap, nextVertexes);
             });
     auto map = hana::at(result, hana::int_c<1>);
     auto expect = hana::make_map(
-        hana::make_pair(hana::type_c<A>, hana::make_tuple(hana::type_c<AImpl>)),
-        hana::make_pair(hana::type_c<B>, hana::make_tuple(hana::type_c<BImpl>)),
-        hana::make_pair(hana::type_c<C>, hana::make_tuple(hana::type_c<CImpl>))
-    );
+            hana::make_pair(hana::type_c<A>, hana::make_tuple(hana::type_c<AImpl>)),
+            hana::make_pair(hana::type_c<B>, hana::make_tuple(hana::type_c<BImpl>)),
+            hana::make_pair(hana::type_c<C>, hana::make_tuple(hana::type_c<CImpl>))
+            );
     BOOST_HANA_ASSERT(map == expect);
 }
