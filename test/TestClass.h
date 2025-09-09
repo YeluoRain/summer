@@ -57,9 +57,13 @@ private:
   BOOST_DESCRIBE_CLASS(CImpl, (C), (), (), ())
 };
 
-class A0 {};
+class A0 {
+  BOOST_DESCRIBE_CLASS(A0, (), (), (), ())
+};
 
-class B0 {};
+class B0 {
+  BOOST_DESCRIBE_CLASS(B0, (), (), (), ())
+};
 
 class A1 : public A0, public B0 {
   BOOST_DESCRIBE_CLASS(A1, (A0, B0), (), (), ())

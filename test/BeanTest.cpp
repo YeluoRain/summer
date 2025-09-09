@@ -99,6 +99,7 @@ TEST_F(BeanTest, test_get_all_independent_beans) {
     using VertexType = typename decltype(hana::typeid_(vertex))::type;
     return hana::type_c<typename VertexType::BeanType>;
   });
+  std::cout << print::ToString(r) << std::endl;
   auto expect = hana::make_map(
       hana::make_pair(hana::type_c<A>, hana::make_tuple(hana::type_c<AImpl>)),
       hana::make_pair(hana::type_c<B>, hana::make_tuple(hana::type_c<BImpl>)),
