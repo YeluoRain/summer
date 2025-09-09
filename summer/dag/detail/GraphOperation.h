@@ -6,6 +6,7 @@
 #define VERTEXOPERATION_H
 
 #include "util/Collection.h"
+#include "boost/describe.hpp"
 
 namespace summer::dag::operation::detail {
     using namespace boost;
@@ -20,6 +21,44 @@ namespace summer::dag::operation::detail {
         }
     };
 
+    template<typename Bean, typename Enable = void>
+    struct GetDerivedBase {
+        constexpr static auto Bases = hana::make_tuple();
+    };
+
+    template<typename Bean>
+    struct GetDerivedBase<Bean, std::enable_if_t<describe::has_describe_bases<Bean>::value>> {
+        constexpr static auto Bases = [] {
+            using BaseDescriptors = describe::describe_bases<Bean, describe::mod_any_access>;
+            using BaseTuple = mp11::mp_rename<BaseDescriptors, hana::tuple>;
+            return hana::transform(BaseTuple(), [](auto base) { return hana::type_c<typename decltype(base)::type>; });
+        }();
+    };
+
+    struct GetAllParentsFuncType {
+        template<typename Beans>
+        constexpr auto operator()(Beans &&beans) const {
+            // allParents, lefts
+            auto allParentsContext = hana::make_tuple(hana::make_tuple(), beans);
+            auto result = hana::while_([](auto &&context) {
+                auto lefts = hana::at(context, hana::size_c<1>);
+                return hana::greater(hana::size(lefts), hana::size_c<0>);
+            }, allParentsContext, [](auto &&context) {
+                auto allParents = hana::at(context, hana::size_c<0>);
+                auto lefts = hana::at(context, hana::size_c<1>);
+                auto nextParents = util::collection::tuple::Merge(allParents, lefts);
+                auto leftParents = hana::transform(lefts, [](auto &&left) {
+                    using Type = typename decltype(hana::typeid_(left))::type;
+                    return GetDerivedBase<Type>::Bases;
+                });
+                auto nextLefts = hana::unpack(leftParents, util::collection::tuple::Merge);
+                return hana::make_tuple(nextParents, nextLefts);
+            });
+            return hana::at(result, hana::size_c<0>);
+        }
+    };
+
+    constexpr GetAllParentsFuncType _GetAllParents{};
 
     struct FillImplementedMapFuncType {
         template<typename ImplementedMap, typename IndependentBeans>
@@ -30,7 +69,7 @@ namespace summer::dag::operation::detail {
                 auto buildPair = [](auto &&inType) {
                     return hana::make_pair(inType, hana::type_c<typename VertexType::BeanType>);
                 };
-                return hana::unpack(VertexType::InList, hana::make_tuple ^ hana::on ^ buildPair);
+                return hana::unpack(_GetAllParents(VertexType::InList), hana::make_tuple ^ hana::on ^ buildPair);
             };
             // 合并内层
             // Tuple(Tuple(Pair(Intf, Impl)...), Tuple(Pair(Intf, Impl)...), ...) -> Tuple(Pair(Intf, Impl)...)
