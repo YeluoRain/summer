@@ -16,3 +16,15 @@ TEST_F(InjectTest, test_inject_and_arrange_construct_sequence) {
   });
   std::cout << util::print::ToString(r) << std::endl;
 }
+
+TEST_F(InjectTest, test_construct_beans) {
+  auto beans = hana::tuple_t<BImpl, AImpl, CImpl>;
+  auto result = bean::factory::Beans::ConstructBeans(beans);
+  auto a = result[hana::type_c<A>];
+  auto b = result[hana::type_c<B>];
+  auto c = result[hana::type_c<C>];
+  BOOST_HANA_ASSERT(a != nullptr);
+  BOOST_HANA_ASSERT(b != nullptr);
+  BOOST_HANA_ASSERT(c != nullptr);
+  std::cout << util::print::ToString(result) << std::endl;
+}
