@@ -3,7 +3,7 @@
 
 #include "bean/Define.h"
 #include "dag/Graph.h"
-#include "dag/Operation.h"
+#include "dag/Vertex.h"
 
 namespace summer::bean::factory {
 struct Beans {
@@ -15,14 +15,9 @@ struct Beans {
           hana::type_c<dag::graph::Vertex<define::BeanResolver<BeanType>>>;
       return beanVertex;
     });
-    auto context = dag::operation::GenerateBeanResolverContext(beanVertexs);
+    auto context =
+        dag::operation::Vertex::GenerateBeanResolverContext(beanVertexs);
     return context;
-  };
-
-  static constexpr auto ToVertex = [](auto &&bean) {
-    using namespace boost;
-    using BeanType = typename decltype(hana::typeid_(bean))::type;
-    return hana::type_c<dag::graph::Vertex<define::BeanResolver<BeanType>>>;
   };
 
   static constexpr auto ToBean = [](auto &&vertex) {
@@ -31,18 +26,14 @@ struct Beans {
     return hana::type_c<typename VertexType::BeanType>;
   };
 
-  static constexpr auto ToVertexes = [](auto &&beans) {
-    return boost::hana::transform(beans, ToVertex);
-  };
-
   static constexpr auto ToBeans = [](auto &&vertexes) {
     return boost::hana::transform(vertexes, ToBean);
   };
 
   static constexpr auto ConstructBeans = [](auto &&bean) {
     using namespace boost;
-    auto context =
-        dag::operation::GenerateBeanResolverContext(ToVertexes(bean));
+    auto context = dag::operation::Vertex::GenerateBeanResolverContext(
+        dag::operation::Vertex::ToVertexes(bean));
     auto independentBeans =
         hana::transform(hana::at(context, hana::int_c<0>), ToBean);
     auto instanceMap = hana::make_map();
@@ -51,7 +42,8 @@ struct Beans {
           using BeanType = typename decltype(hana::typeid_(bean))::type;
           using BeanVertexType =
               dag::graph::Vertex<define::BeanResolver<BeanType>>;
-          auto parents = dag::operation::GetAllParents(hana::make_tuple(bean));
+          auto parents =
+              dag::operation::Vertex::GetAllParents(hana::make_tuple(bean));
           auto args = hana::transform(
               BeanVertexType::OutList, [&instanceMap](auto &&bean) {
                 return hana::eval_if(

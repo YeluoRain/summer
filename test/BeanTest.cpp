@@ -43,14 +43,15 @@ TEST_F(BeanTest, test_create_beanVertexes_success) {
 }
 
 TEST_F(BeanTest, test_generate_dependency_success) {
-  auto independentBeans = operation::GetIndependentBeans(beanVertexes);
+  auto independentBeans = operation::Vertex::GetIndependentBeans(beanVertexes);
   auto implementedMap =
-      operation::FillImplementedMap(hana::make_map(), independentBeans);
+      operation::Vertex::FillImplementedMap(hana::make_map(), independentBeans);
   auto expect = hana::make_map(
       hana::make_pair(hana::type_c<A>, hana::make_tuple(hana::type_c<AImpl>)));
   BOOST_HANA_ASSERT(expect == implementedMap);
 
-  auto nextMap = operation::FillImplementedMap(implementedMap, beanVertexes);
+  auto nextMap =
+      operation::Vertex::FillImplementedMap(implementedMap, beanVertexes);
   auto expect2 = hana::make_map(
       hana::make_pair(hana::type_c<A>, hana::make_tuple(hana::type_c<AImpl>,
                                                         hana::type_c<AImpl>)),
@@ -61,11 +62,11 @@ TEST_F(BeanTest, test_generate_dependency_success) {
 }
 
 TEST_F(BeanTest, test_remove_vertex_dependency) {
-  auto independentBeans = operation::GetIndependentBeans(beanVertexes);
+  auto independentBeans = operation::Vertex::GetIndependentBeans(beanVertexes);
   auto newBeans = hana::to_tuple(hana::difference(
       hana::to_set(beanVertexes), hana::to_set(independentBeans)));
   auto removedDependencyBeans =
-      operation::RemoveVertexDependency(newBeans, independentBeans);
+      operation::Vertex::RemoveVertexDependency(newBeans, independentBeans);
   auto getDependency = [](const auto &vertex) {
     using VertexType = typename decltype(hana::typeid_(vertex))::type;
     return VertexType::OutList;
@@ -92,7 +93,7 @@ TEST_F(BeanTest, test_while) {
 
 TEST_F(BeanTest, test_get_all_independent_beans) {
   // (independentBeans, implementedMap, beanVertexes)
-  auto result = operation::GenerateBeanResolverContext(beanVertexes);
+  auto result = operation::Vertex::GenerateBeanResolverContext(beanVertexes);
   auto independentBeans = hana::at(result, hana::int_c<0>);
   auto intf2ImplMap = hana::at(result, hana::int_c<1>);
   auto r = hana::transform(independentBeans, [](auto &vertex) {
@@ -110,6 +111,6 @@ TEST_F(BeanTest, test_get_all_independent_beans) {
 
 TEST_F(BeanTest, test_get_all_parents) {
   auto input = hana::make_tuple(hana::type_c<A2>);
-  auto output = operation::GetAllParents(input);
+  auto output = operation::Vertex::GetAllParents(input);
   std::cout << print::ToString(output) << std::endl;
 }
