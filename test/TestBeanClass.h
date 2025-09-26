@@ -19,8 +19,10 @@ public:
 
 class AImpl : public A {
 public:
-  INJECT_CONSTRUCTOR(AImpl, ()) {}
-  void testA() override { std::cout << "print wzw" << std::endl; }
+  INJECT_CONSTRUCTOR(AImpl, ()) {
+    std::cout << "AImpl constructor" << std::endl;
+  }
+  void testA() override { std::cout << "print a wzw" << std::endl; }
 
 private:
   BOOST_DESCRIBE_CLASS(AImpl, (A), (), (), ())
@@ -34,9 +36,11 @@ public:
 
 class BImpl : public B {
 public:
-  INJECT_CONSTRUCTOR(explicit BImpl, (std::shared_ptr<A> a)) : a(a) {}
+  INJECT_CONSTRUCTOR(explicit BImpl, (std::shared_ptr<A> a)) : a(a) {
+    std::cout << "BImpl constructor" << std::endl;
+  }
 
-  void testB() override { std::cout << "print wzw" << std::endl; }
+  void testB() override { std::cout << "print b wzw" << std::endl; }
 
 private:
   std::shared_ptr<A> a;
@@ -52,38 +56,17 @@ public:
 class CImpl : public C {
 public:
   INJECT_CONSTRUCTOR(CImpl, (std::shared_ptr<A> a, std::shared_ptr<B> b))
-      : a(a), b(b) {}
+      : a(a), b(b) {
+    std::cout << "CImpl constructor" << std::endl;
+  }
 
-  void testC() override { std::cout << "print wzw" << std::endl; }
+  void testC() override { std::cout << "print c wzw" << std::endl; }
 
 private:
   std::shared_ptr<A> a;
   std::shared_ptr<B> b;
 
   BOOST_DESCRIBE_CLASS(CImpl, (C), (), (), ())
-};
-
-struct BeanResolverA {
-  using BeanType = AImpl;
-  constexpr static auto DependOn = boost::hana::make_tuple();
-  constexpr static auto ImplementOf =
-      boost::hana::make_tuple(boost::hana::type_c<A>);
-};
-
-struct BeanResolverB {
-  using BeanType = BImpl;
-  constexpr static auto DependOn =
-      boost::hana::make_tuple(boost::hana::type_c<A>);
-  constexpr static auto ImplementOf =
-      boost::hana::make_tuple(boost::hana::type_c<B>);
-};
-
-struct BeanResolverC {
-  using BeanType = CImpl;
-  constexpr static auto DependOn =
-      boost::hana::make_tuple(boost::hana::type_c<A>, boost::hana::type_c<B>);
-  constexpr static auto ImplementOf =
-      boost::hana::make_tuple(boost::hana::type_c<C>);
 };
 
 #endif // CCTEST_TESTCLASS_H

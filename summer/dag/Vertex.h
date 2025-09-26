@@ -113,14 +113,21 @@ struct Vertex {
                         hana::make_tuple ^ hana::on ^ removeDependency);
   };
 
-  static constexpr auto GenerateBeanResolverContext = [](auto &&vertexs) {
+  static constexpr auto ChecHasIndependentBeans =
+      [](auto &&independentVertexes) {
+        return hana::size(independentVertexes) > hana::size_c<0>;
+      };
+
+  static constexpr auto GetBeansInOrder = [](auto &&vertexs) {
     using namespace boost;
     auto summerContext =
-        hana::make_tuple(hana::make_tuple(), hana::make_map(), vertexs);
-    return hana::while_(
+        hana::make_tuple(hana::make_tuple(), hana::true_c, vertexs);
+    auto context = hana::while_(
         [](const auto &context) {
           auto vertexes = hana::at(context, hana::int_c<2>);
-          return hana::greater(hana::size(vertexes), hana::size_c<0>);
+          auto checkResult = hana::at(context, hana::int_c<1>);
+          return hana::and_(checkResult, hana::greater(hana::size(vertexes),
+                                                       hana::size_c<0>));
         },
         summerContext,
         [](const auto &context) {
@@ -133,20 +140,18 @@ struct Vertex {
 
           // 当前循环中找到的独立Bean
           auto curIndependentVertexes = GetIndependentBeans(vertexes);
-          // 将这些独立Bean加载到MAP
-          auto nextMap =
-              FillImplementedMap(implementedMap, curIndependentVertexes);
           auto nextIndependentVertexes =
               hana::concat(independentVertexes, curIndependentVertexes);
           // 将独立Bean移除后剩下的非独立Bean
-          auto restVertexes = hana::remove_if(vertexes, [&](const auto &v) {
-            return hana::contains(curIndependentVertexes, v);
-          });
+          auto checkResult = ChecHasIndependentBeans(curIndependentVertexes);
+          auto restVertexes = util::collection::tuple::TupleMinus(
+              vertexes, curIndependentVertexes);
           auto nextVertexes =
               RemoveVertexDependency(restVertexes, curIndependentVertexes);
-          return hana::make_tuple(nextIndependentVertexes, nextMap,
+          return hana::make_tuple(nextIndependentVertexes, checkResult,
                                   nextVertexes);
         });
+    return hana::at(context, hana::int_c<0>);
   };
 };
 } // namespace summer::dag::operation

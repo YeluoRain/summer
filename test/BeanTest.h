@@ -1,22 +1,18 @@
-//
-// Created by Zhongwen Wang on 2023/11/6.
-//
-
-#ifndef CCTEST_BEANTEST_H
-#define CCTEST_BEANTEST_H
+#ifndef TEST_INJECTTEST
+#define TEST_INJECTTEST
 
 #include "gtest/gtest.h"
 
-class BeanTest : public ::testing::Test{
+class BeanTest : public ::testing::Test {
 public:
-    static void SetUpTestSuite() {}
+  static void SetUpTestSuite() {}
 
-    static void TearDownTestSuite() {}
+  static void TearDownTestSuite() {}
+
 protected:
-    void SetUp() override;
+  void SetUp() override{};
 
-    void TearDown() override;
+  void TearDown() override{};
 };
 
-
-#endif//CCTEST_BEANTEST_H
+#endif /* TEST_INJECTTEST */

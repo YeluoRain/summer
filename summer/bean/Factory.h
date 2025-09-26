@@ -15,9 +15,7 @@ struct Beans {
           hana::type_c<dag::graph::Vertex<define::BeanResolver<BeanType>>>;
       return beanVertex;
     });
-    auto context =
-        dag::operation::Vertex::GenerateBeanResolverContext(beanVertexs);
-    return context;
+    return dag::operation::Vertex::GetBeansInOrder(beanVertexs);
   };
 
   static constexpr auto ToBean = [](auto &&vertex) {
@@ -30,12 +28,25 @@ struct Beans {
     return boost::hana::transform(vertexes, ToBean);
   };
 
-  static constexpr auto ConstructBeans = [](auto &&bean) {
+  static constexpr auto MergeBeanMap = [](auto &&beanMap, auto &&parents,
+                                          auto &&instance) {
     using namespace boost;
-    auto context = dag::operation::Vertex::GenerateBeanResolverContext(
-        dag::operation::Vertex::ToVertexes(bean));
-    auto independentBeans =
-        hana::transform(hana::at(context, hana::int_c<0>), ToBean);
+    return hana::fold_left(
+        parents, beanMap, [&](auto &&curBeanMap, auto &&parent) {
+          auto instances =
+              hana::find(curBeanMap, parent).value_or(hana::make_tuple());
+          auto pair =
+              hana::make_pair(parent, hana::append(instances, instance));
+          auto newMap = hana::erase_key(curBeanMap, parent);
+          return hana::insert(newMap, pair);
+        });
+  };
+
+  static constexpr auto CreateFactory = [](auto &&beans) {
+    using namespace boost;
+    auto independentVertexes = dag::operation::Vertex::GetBeansInOrder(
+        dag::operation::Vertex::ToVertexes(beans));
+    auto independentBeans = hana::transform(independentVertexes, ToBean);
     auto instanceMap = hana::make_map();
     return hana::fold_left(
         independentBeans, instanceMap, [](auto &&instanceMap, auto &&bean) {
@@ -50,18 +61,14 @@ struct Beans {
                     hana::size(instanceMap) == hana::size_c<0>,
                     [](auto &&) { return hana::make_tuple(); },
                     [&instanceMap, &bean](auto &&) {
-                      return instanceMap[bean];
+                      return instanceMap[bean][hana::size_c<0>];
                     });
               });
           auto instance = hana::unpack(args, [](auto &&...args) {
             return std::make_shared<BeanType>(
                 std::forward<decltype(args)>(args)...);
           });
-          auto map = hana::unpack(
-              parents, hana::make_map ^ hana::on ^ [&instance](auto &&parent) {
-                return hana::make_pair(parent, instance);
-              });
-          return hana::union_(instanceMap, map);
+          return MergeBeanMap(instanceMap, parents, instance);
         });
   };
 };
