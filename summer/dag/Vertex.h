@@ -113,10 +113,12 @@ struct Vertex {
                         hana::make_tuple ^ hana::on ^ removeDependency);
   };
 
-  static constexpr auto ChecHasIndependentBeans =
-      [](auto &&independentVertexes) {
-        return hana::size(independentVertexes) > hana::size_c<0>;
-      };
+  static constexpr auto ChecHasIndependentBeans = [](auto &&vertexes) {
+    return hana::any_of(vertexes, [](const auto &vertex) {
+      using VertexType = typename decltype(hana::typeid_(vertex))::type;
+      return VertexType::OutDegree == hana::size_c<0>;
+    });
+  };
 
   static constexpr auto GetBeansInOrder = [](auto &&vertexs) {
     using namespace boost;
@@ -133,17 +135,15 @@ struct Vertex {
         [](const auto &context) {
           // 第一个参数为独立点列表，有序
           auto independentVertexes = hana::at(context, hana::int_c<0>);
-          // 第二个为实现了哪些接口和背后的实现类列表
-          auto implementedMap = hana::at(context, hana::int_c<1>);
           // 第三个为剩下的点
           auto vertexes = hana::at(context, hana::int_c<2>);
-
-          // 当前循环中找到的独立Bean
+          auto checkResult = ChecHasIndependentBeans(vertexes);
+          static_assert(hana::value(checkResult), "Graph has cycle or missing "
+                                                  "dependency");
           auto curIndependentVertexes = GetIndependentBeans(vertexes);
           auto nextIndependentVertexes =
               hana::concat(independentVertexes, curIndependentVertexes);
           // 将独立Bean移除后剩下的非独立Bean
-          auto checkResult = ChecHasIndependentBeans(curIndependentVertexes);
           auto restVertexes = util::collection::tuple::TupleMinus(
               vertexes, curIndependentVertexes);
           auto nextVertexes =

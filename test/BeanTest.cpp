@@ -28,5 +28,15 @@ TEST_F(BeanTest, test_construct_beans_by_bean_factory) {
   EXPECT_EQ(a.get(), a1.get());
   EXPECT_EQ(b.get(), b1.get());
   EXPECT_EQ(c.get(), c1.get());
-  a->testA();
 }
+
+// TEST_F(BeanTest, test_construct_beans_lack_of_impl) {
+//   using namespace NormalCase;
+//   using Factory = BeanFactory<CImpl, AImpl>;
+//   auto a = Factory::GetBean<A>();
+//   auto c = Factory::GetBean<C>();
+//   auto a1 = Factory::GetBean<AImpl>();
+//   auto c1 = Factory::GetBean<CImpl>();
+//   EXPECT_EQ(a.get(), a1.get());
+//   EXPECT_EQ(c.get(), c1.get());
+// }
