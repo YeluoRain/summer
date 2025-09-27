@@ -38,8 +38,7 @@ struct BeanResolverImpl {
     auto argTypes = FuncTraits::ARG_TYPES;
     return hana::transform(argTypes, [](auto &&argType) {
       using ArgType = typename decltype(hana::typeid_(argType))::type;
-      using ArgTypePointerTraits = std::pointer_traits<std::decay_t<ArgType>>;
-      return hana::type_c<typename ArgTypePointerTraits::element_type>;
+      return hana::type_c<typename traits::ArgTypeTraits<ArgType>::type>;
     });
   }();
 };

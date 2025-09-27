@@ -11,6 +11,7 @@
 #include <iostream>
 #include <memory>
 
+namespace NormalCase {
 class A {
 public:
   virtual ~A() = default;
@@ -68,5 +69,6 @@ private:
 
   BOOST_DESCRIBE_CLASS(CImpl, (C), (), (), ())
 };
+} // namespace NormalCase
 
 #endif // CCTEST_TESTCLASS_H

@@ -6,6 +6,7 @@ using namespace boost;
 using namespace summer;
 
 TEST_F(BeanTest, test_construct_beans) {
+  using namespace NormalCase;
   auto beans = hana::tuple_t<BImpl, AImpl, CImpl>;
   auto result = bean::factory::Beans::CreateFactory(beans);
   auto a = result[hana::type_c<A>];
@@ -16,6 +17,7 @@ TEST_F(BeanTest, test_construct_beans) {
 }
 
 TEST_F(BeanTest, test_construct_beans_by_bean_factory) {
+  using namespace NormalCase;
   using Factory = BeanFactory<CImpl, BImpl, AImpl>;
   auto a = Factory::GetBean<A>();
   auto b = Factory::GetBean<B>();
