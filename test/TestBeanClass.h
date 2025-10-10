@@ -147,6 +147,32 @@ private:
 
   BOOST_DESCRIBE_CLASS(CImpl, (C), (), (), ())
 };
+
+class D {
+public:
+  virtual ~D() = default;
+  virtual void testD() = 0;
+};
+
+class DImpl : public D {
+public:
+  INJECT_CONSTRUCTOR(DImpl, (std::shared_ptr<C> c, std::shared_ptr<B> b))
+      : c(c), b(b) {
+    std::cout << "FactoryCreateCase DImpl constructor" << std::endl;
+  }
+
+  void testD() override { std::cout << "print d wzw" << std::endl; }
+
+  ~DImpl() override {
+    std::cout << "FactoryCreateCase DImpl destructor" << std::endl;
+  }
+
+private:
+  std::shared_ptr<C> c;
+  std::shared_ptr<B> b;
+
+  BOOST_DESCRIBE_CLASS(DImpl, (D), (), (), ())
+};
 } // namespace FactoryCreateCase
 
 #endif // CCTEST_TESTCLASS_H

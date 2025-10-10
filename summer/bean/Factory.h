@@ -96,7 +96,7 @@ struct Beans {
                                   .value_or(hana::make_tuple());
               return constructor::BeanCreatorInvoker<ArgType>::Invoke(creators);
             });
-            return hana::unpack(args, [](auto &&...args) {
+            return hana::unpack(std::move(args), [](auto &&...args) {
               return new BeanType(std::forward<decltype(args)>(args)...);
             });
           };
