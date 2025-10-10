@@ -30,6 +30,15 @@ TEST_F(BeanTest, test_construct_beans_by_bean_factory) {
   EXPECT_EQ(c.get(), c1.get());
 }
 
+TEST_F(BeanTest, test_bean_factory) {
+  using namespace FactoryCreateCase;
+  auto beans = hana::tuple_t<BImpl, AImpl, CImpl>;
+  auto factory = bean::factory::Beans::CreateFactory0(beans);
+  auto creator = factory[hana::type_c<C>];
+  auto instance = creator[hana::size_c<0>].GetShared();
+  instance->testC();
+}
+
 // TEST_F(BeanTest, test_construct_beans_lack_of_impl) {
 //   using namespace NormalCase;
 //   using Factory = BeanFactory<CImpl, AImpl>;

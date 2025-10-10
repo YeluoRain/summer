@@ -1,6 +1,7 @@
 #ifndef SUMMER_BEAN_FACTORY
 #define SUMMER_BEAN_FACTORY
 
+#include "bean/Constructor.h"
 #include "bean/Define.h"
 #include "dag/Graph.h"
 #include "dag/Vertex.h"
@@ -69,6 +70,38 @@ struct Beans {
                 std::forward<decltype(args)>(args)...);
           });
           return MergeBeanMap(instanceMap, parents, instance);
+        });
+  };
+
+  static constexpr auto CreateFactory0 = [](auto &&beans) {
+    using namespace boost;
+    auto independentVertexes = dag::operation::Vertex::GetBeansInOrder(
+        dag::operation::Vertex::ToVertexes(beans));
+    auto independentBeans = hana::transform(independentVertexes, ToBean);
+    auto beanCreatorMap = hana::make_map();
+    return hana::fold_left(
+        independentBeans, beanCreatorMap, [](auto &&creatorMap, auto &&bean) {
+          using BeanType = typename decltype(hana::typeid_(bean))::type;
+          using BeanVertexType =
+              dag::graph::Vertex<define::BeanResolver<BeanType>>;
+          auto parents =
+              dag::operation::Vertex::GetAllParents(hana::make_tuple(bean));
+          auto creator = [creatorMap] {
+            auto argTypes = traits::ConstructorTraits<decltype(
+                &BeanType::_InjectedFactory)>::ARG_TYPES;
+            auto args = hana::transform(argTypes, [&creatorMap](auto &&bean) {
+              using ArgType = typename decltype(hana::typeid_(bean))::type;
+              using RawArgType = typename traits::ArgTypeTraits<ArgType>::type;
+              auto creators = hana::find(creatorMap, hana::type_c<RawArgType>)
+                                  .value_or(hana::make_tuple());
+              return constructor::BeanCreatorInvoker<ArgType>::Invoke(creators);
+            });
+            return hana::unpack(args, [](auto &&...args) {
+              return new BeanType(std::forward<decltype(args)>(args)...);
+            });
+          };
+          return MergeBeanMap(creatorMap, parents,
+                              constructor::BeanCreator<BeanType>{creator});
         });
   };
 };
