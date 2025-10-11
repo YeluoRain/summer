@@ -43,7 +43,7 @@ struct Beans {
         });
   };
 
-  static constexpr auto CreateFactory = [](auto &&beans) {
+  static constexpr auto CreateFactory0 = [](auto &&beans) {
     using namespace boost;
     auto independentVertexes = dag::operation::Vertex::GetBeansInOrder(
         dag::operation::Vertex::ToVertexes(beans));
@@ -73,7 +73,7 @@ struct Beans {
         });
   };
 
-  static constexpr auto CreateFactory0 = [](auto &&beans) {
+  static constexpr auto CreateFactory = [](auto &&beans) {
     using namespace boost;
     auto independentVertexes = dag::operation::Vertex::GetBeansInOrder(
         dag::operation::Vertex::ToVertexes(beans));

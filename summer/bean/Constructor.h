@@ -41,45 +41,58 @@ private:
 template <typename BeanType>
 std::shared_ptr<BeanType> BeanCreator<BeanType>::m_sharedInstance = nullptr;
 
+template <typename ArgType> struct SingletonInvokerHelper {
+  template <typename BeanCreators>
+  static constexpr std::shared_ptr<ArgType> Invoke(BeanCreators &&creators) {
+    assert(hana::size(creators) == hana::size_c<1> &&
+           "Multiple creators found for single instance.");
+    auto creator = creators[hana::size_c<0>];
+    return creator.GetShared();
+  }
+};
+
 template <typename ArgType> struct BeanCreatorInvoker {
   template <typename BeanCreators>
-  static std::remove_reference_t<ArgType> &Invoke(BeanCreators &&creators) {
-    // static_assert(hana::value(hana::size(creators) == hana::size_c<1>),
-    //               "Multiple creators found for single instance.");
-    auto creator = creators[hana::size_c<0>];
-    auto instance = creator.template GetShared();
-    return *instance;
+  static constexpr ArgType Invoke(BeanCreators &&creators) {
+    return *SingletonInvokerHelper<ArgType>::Invoke(creators);
+  }
+};
+
+template <typename ArgType> struct BeanCreatorInvoker<const ArgType> {
+  template <typename BeanCreators>
+  static constexpr const ArgType Invoke(BeanCreators &&creators) {
+    return BeanCreatorInvoker<ArgType>::Invoke(creators);
+  }
+};
+
+template <typename ArgType> struct BeanCreatorInvoker<ArgType &> {
+  template <typename BeanCreators>
+  static constexpr ArgType Invoke(BeanCreators &&creators) {
+    return BeanCreatorInvoker<ArgType>::Invoke(creators);
   }
 };
 
 template <typename ArgType> struct BeanCreatorInvoker<ArgType *> {
   template <typename BeanCreators>
-  static ArgType *Invoke(BeanCreators &&creators) {
-    // static_assert(hana::value(hana::size(creators) == hana::size_c<1>),
-    //               "Multiple creators found for single instance.");
-    auto creator = creators[hana::size_c<0>];
-    auto instance = creator.template GetShared();
-    return instance.get();
+  static constexpr ArgType *Invoke(BeanCreators &&creators) {
+    return SingletonInvokerHelper<ArgType>::Invoke(creators).get();
   }
 };
 
 template <typename ArgType>
 struct BeanCreatorInvoker<std::shared_ptr<ArgType>> {
   template <typename BeanCreators>
-  static std::shared_ptr<ArgType> Invoke(BeanCreators &&creators) {
-    // static_assert(hana::value(hana::size(creators) == hana::size_c<1>),
-    //               "Multiple creators found for single instance.");
-    auto creator = creators[hana::size_c<0>];
-    return creator.GetShared();
+  static constexpr std::shared_ptr<ArgType> Invoke(BeanCreators &&creators) {
+    return SingletonInvokerHelper<ArgType>::Invoke(creators);
   }
 };
 
 template <typename ArgType>
 struct BeanCreatorInvoker<std::unique_ptr<ArgType>> {
   template <typename BeanCreators>
-  static std::unique_ptr<ArgType> Invoke(BeanCreators &&creators) {
-    // static_assert(hana::value(hana::size(creators) == hana::size_c<1>),
-    //               "Multiple creators found for single instance.");
+  static constexpr std::unique_ptr<ArgType> Invoke(BeanCreators &&creators) {
+    assert(hana::size(creators) == hana::size_c<1> &&
+           "Multiple creators found for single instance.");
     auto creator = creators[hana::size_c<0>];
     return creator.GetUnique();
   }
@@ -87,7 +100,7 @@ struct BeanCreatorInvoker<std::unique_ptr<ArgType>> {
 
 template <typename ArgType> struct BeanCreatorInvoker<std::list<ArgType>> {
   template <typename BeanCreators>
-  static std::list<ArgType> Invoke(BeanCreators &&creators) {
+  static constexpr std::list<ArgType> Invoke(BeanCreators &&creators) {
     std::list<ArgType> result;
     hana::for_each(creators, [&](auto &&creator) {
       auto instance =

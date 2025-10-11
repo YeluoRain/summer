@@ -14,9 +14,7 @@
 namespace summer::bean::traits {
 
 // 基础模板
-template <typename T> struct ArgTypeTraits {
-  using type = std::remove_cv_t<std::remove_reference_t<T>>;
-};
+template <typename T> struct ArgTypeTraits { using type = T; };
 
 // 指针
 template <typename T> struct ArgTypeTraits<T *> {
@@ -25,6 +23,16 @@ template <typename T> struct ArgTypeTraits<T *> {
 
 // std::shared_ptr
 template <typename T> struct ArgTypeTraits<std::shared_ptr<T>> {
+  using type = typename ArgTypeTraits<T>::type;
+};
+
+// const
+template <typename T> struct ArgTypeTraits<const T> {
+  using type = typename ArgTypeTraits<T>::type;
+};
+
+// &
+template <typename T> struct ArgTypeTraits<T &> {
   using type = typename ArgTypeTraits<T>::type;
 };
 
