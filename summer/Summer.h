@@ -26,6 +26,28 @@ public:
     return creators[hana::size_c<0>].GetShared();
   }
 
+  template <typename BeanType>
+  static std::list<std::shared_ptr<BeanType>> GetSharedList() {
+    static_assert(hana::contains(container, hana::type_c<BeanType>),
+                  "BeanType not found in BeanFactory");
+    auto creators = container[hana::type_c<BeanType>];
+    std::list<std::shared_ptr<BeanType>> result;
+    hana::for_each(
+        creators, [&](auto creator) { result.push_back(creator.GetShared()); });
+    return result;
+  }
+
+  template <typename BeanType>
+  static std::list<std::unique_ptr<BeanType>> GetUniqueList() {
+    static_assert(hana::contains(container, hana::type_c<BeanType>),
+                  "BeanType not found in BeanFactory");
+    auto creators = container[hana::type_c<BeanType>];
+    std::list<std::unique_ptr<BeanType>> result;
+    hana::for_each(
+        creators, [&](auto creator) { result.push_back(creator.GetUnique()); });
+    return result;
+  }
+
   template <typename BeanType> static std::unique_ptr<BeanType> GetUnique() {
     static_assert(hana::contains(container, hana::type_c<BeanType>),
                   "BeanType not found in BeanFactory");
