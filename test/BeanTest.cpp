@@ -96,6 +96,18 @@ TEST_F(BeanTest, test_construct_beans_with_raw_pointer_constructor) {
   EXPECT_TRUE(c1->a == a.get());
 }
 
+TEST_F(BeanTest,
+       test_construct_beans_with_unique_but_has_nested_shared_ptr_constructor) {
+  using namespace BeansWithUniqueButHasSharedPtrConstructor;
+  using Factory = BeanFactory<CImpl, BImpl, AImpl>;
+  auto a = Factory::GetShared<AImpl>();
+  auto c = Factory::GetShared<C>();
+  auto b = Factory::GetShared<BImpl>();
+  auto c1 = Factory::GetShared<CImpl>();
+  EXPECT_EQ(c.get(), c1.get());
+  EXPECT_NE(b.get(), c1->b.get());
+}
+
 // TEST_F(BeanTest, test_construct_beans_lack_of_impl) {
 //   using namespace NormalCase;
 //   using Factory = BeanFactory<CImpl, AImpl>;

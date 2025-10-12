@@ -19,7 +19,7 @@ public:
   INJECT_CONSTRUCTOR(AImpl, ()) {
     std::cout << "NormalCase AImpl constructor" << std::endl;
   }
-  void testA() override { std::cout << "print a wzw" << std::endl; }
+  void testA() override { std::cout << "print a test" << std::endl; }
 
   ~AImpl() override { std::cout << "NormalCase AImpl destructor" << std::endl; }
 
@@ -39,7 +39,7 @@ public:
     std::cout << "NormalCase BImpl constructor" << std::endl;
   }
 
-  void testB() override { std::cout << "print b wzw" << std::endl; }
+  void testB() override { std::cout << "print b test" << std::endl; }
 
   ~BImpl() override { std::cout << "NormalCase BImpl destructor" << std::endl; }
 
@@ -62,7 +62,7 @@ public:
     std::cout << "NormalCase CImpl constructor" << std::endl;
   }
 
-  void testC() override { std::cout << "print c wzw" << std::endl; }
+  void testC() override { std::cout << "print c test" << std::endl; }
 
   ~CImpl() override { std::cout << "NormalCase CImpl destructor" << std::endl; }
 
@@ -149,7 +149,7 @@ public:
   INJECT_CONSTRUCTOR(AImpl, ()) {
     std::cout << "FactoryCreateCase AImpl constructor" << std::endl;
   }
-  void testA() override { std::cout << "print a wzw" << std::endl; }
+  void testA() override { std::cout << "print a test" << std::endl; }
 
   ~AImpl() override {
     std::cout << "FactoryCreateCase AImpl destructor" << std::endl;
@@ -171,7 +171,7 @@ public:
     std::cout << "FactoryCreateCase BImpl constructor" << std::endl;
   }
 
-  void testB() override { std::cout << "print b wzw" << std::endl; }
+  void testB() override { std::cout << "print b test" << std::endl; }
 
   ~BImpl() override {
     std::cout << "FactoryCreateCase BImpl destructor" << std::endl;
@@ -195,7 +195,7 @@ public:
     std::cout << "FactoryCreateCase CImpl constructor" << std::endl;
   }
 
-  void testC() override { std::cout << "print c wzw" << std::endl; }
+  void testC() override { std::cout << "print c test" << std::endl; }
 
   ~CImpl() override {
     std::cout << "FactoryCreateCase CImpl destructor" << std::endl;
@@ -221,7 +221,7 @@ public:
     std::cout << "FactoryCreateCase DImpl constructor" << std::endl;
   }
 
-  void testD() override { std::cout << "print d wzw" << std::endl; }
+  void testD() override { std::cout << "print d test" << std::endl; }
 
   ~DImpl() override {
     std::cout << "FactoryCreateCase DImpl destructor" << std::endl;
@@ -473,5 +473,74 @@ public:
   BOOST_DESCRIBE_CLASS(CImpl, (C), (), (), ())
 };
 } // namespace BeansWithRawPointerConstructor
+
+namespace BeansWithUniqueButHasSharedPtrConstructor {
+class A {
+public:
+  virtual ~A() = default;
+};
+
+class AImpl : public A {
+public:
+  INJECT_CONSTRUCTOR(AImpl, ()) {
+    std::cout << "BeansWithUniqueButHasSharedPtrConstructor AImpl constructor"
+              << std::endl;
+  }
+
+  ~AImpl() override {
+    std::cout << "BeansWithUniqueButHasSharedPtrConstructor AImpl destructor"
+              << std::endl;
+  }
+
+private:
+  BOOST_DESCRIBE_CLASS(AImpl, (A), (), (), ())
+};
+
+class B {
+public:
+  virtual ~B() = default;
+};
+
+class BImpl : public B {
+public:
+  INJECT_CONSTRUCTOR(explicit BImpl, (const std::shared_ptr<A> a)) : a(a) {
+    std::cout << "BeansWithUniqueButHasSharedPtrConstructor BImpl constructor"
+              << std::endl;
+  }
+
+  ~BImpl() override {
+    std::cout << "BeansWithUniqueButHasSharedPtrConstructor BImpl destructor"
+              << std::endl;
+  }
+
+private:
+  std::shared_ptr<A> a;
+  BOOST_DESCRIBE_CLASS(BImpl, (B), (), (), ())
+};
+
+class C {
+public:
+  virtual ~C() = default;
+};
+
+class CImpl : public C {
+public:
+  INJECT_CONSTRUCTOR(CImpl, (const std::shared_ptr<A> a, std::unique_ptr<B> b))
+      : a(a), b(std::move(b)) {
+    std::cout << "BeansWithUniqueButHasSharedPtrConstructor CImpl constructor"
+              << std::endl;
+  }
+
+  ~CImpl() override {
+    std::cout << "BeansWithUniqueButHasSharedPtrConstructor CImpl destructor"
+              << std::endl;
+  }
+
+  std::shared_ptr<A> a;
+  std::unique_ptr<B> b;
+
+  BOOST_DESCRIBE_CLASS(CImpl, (C), (), (), ())
+};
+} // namespace BeansWithUniqueButHasSharedPtrConstructor
 
 #endif /* TEST_TESTBEANCLASS */

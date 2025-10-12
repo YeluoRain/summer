@@ -17,7 +17,7 @@ public:
 
 class AImpl : public A {
 public:
-  void testA() override { std::cout << "print wzw" << std::endl; }
+  void testA() override { std::cout << "print test" << std::endl; }
 
 private:
   BOOST_DESCRIBE_CLASS(AImpl, (A), (), (), ())
@@ -32,7 +32,7 @@ class BImpl : public B {
 public:
   explicit BImpl(std::shared_ptr<A> &a) : a(a) {}
 
-  void testB() override { std::cout << "print wzw" << std::endl; }
+  void testB() override { std::cout << "print test" << std::endl; }
 
 private:
   std::shared_ptr<A> a;
@@ -48,7 +48,7 @@ class CImpl : public C {
 public:
   explicit CImpl(std::shared_ptr<A> &a, std::shared_ptr<B> &b) : a(a), b(b) {}
 
-  void testC() override { std::cout << "print wzw" << std::endl; }
+  void testC() override { std::cout << "print test" << std::endl; }
 
 private:
   std::shared_ptr<A> a;
