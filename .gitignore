@@ -1,0 +1,7 @@
+# Project exclude paths
+/cmake-build-debug/
+.cache
+.vscode
+build
+compile_commands.json
+.idea
