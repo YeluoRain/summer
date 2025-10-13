@@ -42,7 +42,7 @@ jobs:
         # The platform version boost was compiled on, e.g. "18.04"
         platform_version: 22.04 # optional, default is 
         # Whether the boost libraries are linked statically or dynamically
-        link: dynamically # optional, default is 
+        link: shared # optional, default is 
         # The architecture the binaries were built for
         arch: x86 # optional, default is x86
         # The dirctory to install boost into
