@@ -8,14 +8,16 @@
 #include "boost/core/demangle.hpp"
 
 namespace summer::util::print {
-    using namespace boost;
+using namespace boost;
 
-    struct ToStringFuncType {
-        template<typename T>
-        std::string operator()(const T &) const { return core::demangle(typeid(T).name()); }
-    };
+struct ToStringFuncType {
+    template <typename T>
+    std::string operator()(const T&) const {
+        return core::demangle(typeid(T).name());
+    }
+};
 
-    inline ToStringFuncType ToString{};
-}
+inline ToStringFuncType ToString{};
+}  // namespace summer::util::print
 
-#endif //PRINT_H
+#endif  // PRINT_H

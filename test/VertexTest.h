@@ -8,15 +8,15 @@
 #include "gtest/gtest.h"
 
 class VertexTest : public ::testing::Test {
-public:
-  static void SetUpTestSuite() {}
+  public:
+    static void SetUpTestSuite() {}
 
-  static void TearDownTestSuite() {}
+    static void TearDownTestSuite() {}
 
-protected:
-  void SetUp() override;
+  protected:
+    void SetUp() override;
 
-  void TearDown() override;
+    void TearDown() override;
 };
 
-#endif // CCTEST_BEANTEST_H
+#endif  // CCTEST_BEANTEST_H
