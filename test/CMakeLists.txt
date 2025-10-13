@@ -7,3 +7,4 @@ target_include_directories(summer_test PUBLIC
         "${ROOT_DIR}/summer")
 target_link_directories(summer_test PUBLIC "${REPO_DIR}/lib")
 target_link_libraries(summer_test gtest gtest_main)
+add_test(NAME summer_test COMMAND summer_test)
