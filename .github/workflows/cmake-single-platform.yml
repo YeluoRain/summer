@@ -20,44 +20,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Googletest installer
-      uses: MarkusJx/googletest-installer@v1.1.1
-      with:
-        # A path to the CC compiler
-        CC_path: # optional, default is 
-        # A path to the CXX compiler
-        CXX_path: # optional, default is 
-        # C flags to pass to the C compiler
-        C_FLAGS: # optional, default is 
-        # C++ flags to pass to the C++ compiler
-        CXX_FLAGS: # optional, default is 
-              
-    - name: Download and install Boost
-      uses: MarkusJx/install-boost@v2.5.1
-      with:
-        # The boost version to install, e.g. "1.73.0"
-        boost_version: 1.89.0
-        # The toolset used to compile boost, e.g. "msvc"
-        toolset: gcc # optional, default is 
-        # The platform version boost was compiled on, e.g. "18.04"
-        platform_version:  # optional, default is 
-        # Whether the boost libraries are linked statically or dynamically
-        link: # optional, default is 
-        # The architecture the binaries were built for
-        arch: # optional, default is x86
-        # The dirctory to install boost into
-        boost_install_dir: # optional, default is 
-        # Wheter to use actions/cache to improve build times
-        cache: true # optional, default is true
+    - name: Install dependencies
+      run: sudo apt-get install -y libboost-all-dev libgtest-dev
 
     - uses: actions/checkout@v4
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} \
-          -DGTEST_ROOT=${{ steps/gtest.outputs.gtest_root }} \
-          -DBOOST_ROOT=${{ steps.boost.outputs.BOOST_ROOT }}
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
     - name: Build
       # Build your program with the given configuration
