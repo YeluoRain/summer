@@ -90,18 +90,18 @@ struct Vertex {
         using namespace boost;
         auto summerContext = hana::make_tuple(hana::make_tuple(), hana::true_c, vertexs);
         auto context = hana::while_(
-            [](const auto& context) {
-                auto vertexes = hana::at(context, hana::int_c<2>);
-                auto checkResult = hana::at(context, hana::int_c<1>);
+            [](const auto& context0) {
+                auto vertexes = hana::at(context0, hana::int_c<2>);
+                auto checkResult = hana::at(context0, hana::int_c<1>);
                 return hana::and_(checkResult,
                                   hana::greater(hana::size(vertexes), hana::size_c<0>));
             },
             summerContext,
-            [](const auto& context) {
+            [](const auto& context0) {
                 // 第一个参数为独立点列表，有序
-                auto independentVertexes = hana::at(context, hana::int_c<0>);
+                auto independentVertexes = hana::at(context0, hana::int_c<0>);
                 // 第三个为剩下的点
-                auto vertexes = hana::at(context, hana::int_c<2>);
+                auto vertexes = hana::at(context0, hana::int_c<2>);
                 auto checkResult = ChecHasIndependentBeans(vertexes);
                 if constexpr (hana::not_(checkResult)) {
                     auto nextBeans = util::collection::tuple::RemoveDuplicates(
