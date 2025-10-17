@@ -7,9 +7,9 @@
 
 #include <memory>
 
-#include "bean/Traits.h"
 #include "boost/describe.hpp"
 #include "boost/mp11.hpp"
+#include "summer/bean/Traits.h"
 
 #define INJECT_UNPACK(...) __VA_ARGS__
 

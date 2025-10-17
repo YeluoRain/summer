@@ -1,7 +1,7 @@
 #include "BeanTest.h"
 
-#include "Summer.h"
 #include "TestBeanClass.h"
+#include "summer/Summer.h"
 
 using namespace boost;
 using namespace summer;
@@ -129,13 +129,23 @@ TEST_F(BeanTest, test_construct_beans_with_unique_but_has_nested_shared_ptr_cons
     EXPECT_NE(b.get(), c1->b.get());
 }
 
+TEST_F(BeanTest, test_construct_beans_without_interface_heritated) {
+    using namespace BeansWithoutInterfaceHeritated;
+    using Factory = BeanFactory<CImpl, BImpl, AImpl>;
+    auto a = Factory::GetShared<AImpl>();
+    auto b = Factory::GetShared<BImpl>();
+    auto c = Factory::GetShared<CImpl>();
+    EXPECT_NE(b.get(), c->b.get());
+    EXPECT_EQ(a.get(), b->a.get());
+}
+
 // TEST_F(BeanTest, test_construct_beans_lack_of_impl) {
-//   using namespace NormalCase;
-//   using Factory = BeanFactory<CImpl, AImpl>;
-//   auto a = Factory::GetBean<A>();
-//   auto c = Factory::GetBean<C>();
-//   auto a1 = Factory::GetBean<AImpl>();
-//   auto c1 = Factory::GetBean<CImpl>();
-//   EXPECT_EQ(a.get(), a1.get());
-//   EXPECT_EQ(c.get(), c1.get());
+//     using namespace NormalCase;
+//     using Factory = BeanFactory<CImpl, AImpl>;
+//     auto a = Factory::GetShared<A>();
+//     auto c = Factory::GetShared<C>();
+//     auto a1 = Factory::GetShared<AImpl>();
+//     auto c1 = Factory::GetShared<CImpl>();
+//     EXPECT_EQ(a.get(), a1.get());
+//     EXPECT_EQ(c.get(), c1.get());
 // }

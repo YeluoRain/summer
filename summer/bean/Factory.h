@@ -1,10 +1,10 @@
 #ifndef SUMMER_BEAN_FACTORY
 #define SUMMER_BEAN_FACTORY
 
-#include "bean/Constructor.h"
-#include "bean/Define.h"
-#include "dag/Graph.h"
-#include "dag/Vertex.h"
+#include "summer/bean/Constructor.h"
+#include "summer/bean/Define.h"
+#include "summer/dag/Graph.h"
+#include "summer/dag/Vertex.h"
 
 namespace summer::bean::factory {
 struct Beans {
@@ -16,16 +16,6 @@ struct Beans {
             return beanVertex;
         });
         return dag::operation::Vertex::GetBeansInOrder(beanVertexs);
-    };
-
-    static constexpr auto ToBean = [](auto&& vertex) {
-        using namespace boost;
-        using VertexType = typename decltype(hana::typeid_(vertex))::type;
-        return hana::type_c<typename VertexType::BeanType>;
-    };
-
-    static constexpr auto ToBeans = [](auto&& vertexes) {
-        return boost::hana::transform(vertexes, ToBean);
     };
 
     static constexpr auto MergeBeanMap = [](auto&& beanMap, auto&& parents, auto&& instance) {
@@ -42,7 +32,8 @@ struct Beans {
         using namespace boost;
         auto independentVertexes =
             dag::operation::Vertex::GetBeansInOrder(dag::operation::Vertex::ToVertexes(beans));
-        auto independentBeans = hana::transform(independentVertexes, ToBean);
+        auto independentBeans =
+            hana::transform(independentVertexes, dag::operation::Vertex::ToBean);
         auto beanCreatorMap = hana::make_map();
         return hana::fold_left(
             independentBeans, beanCreatorMap, [](auto&& creatorMap, auto&& bean) {
@@ -51,8 +42,8 @@ struct Beans {
                 auto creator = [creatorMap] {
                     auto argTypes =
                         traits::ConstructorTraits<decltype(&BeanType::_InjectedFactory)>::ARG_TYPES;
-                    auto args = hana::transform(argTypes, [&creatorMap](auto&& bean) {
-                        using ArgType = typename decltype(hana::typeid_(bean))::type;
+                    auto args = hana::transform(argTypes, [&creatorMap](auto&& bean0) {
+                        using ArgType = typename decltype(hana::typeid_(bean0))::type;
                         using RawArgType = typename traits::ArgTypeTraits<ArgType>::type;
                         auto creators = hana::find(creatorMap, hana::type_c<RawArgType>)
                                             .value_or(hana::make_tuple());
