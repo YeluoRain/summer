@@ -4,9 +4,9 @@
 #include <iostream>
 #include <memory>
 
-#include "Summer.h"
 #include "boost/describe.hpp"
 #include "boost/hana.hpp"
+#include "summer/Summer.h"
 
 namespace NormalCase {
 class A {
@@ -113,7 +113,7 @@ class B {
 
 class BImpl : public B {
   public:
-    INJECT_CONSTRUCTOR(explicit BImpl, (A & a)) : a(a) {
+    INJECT_CONSTRUCTOR(explicit BImpl, (A&)) {
         std::cout << "BeanWithRefConstructor BImpl constructor" << std::endl;
     }
 
@@ -122,7 +122,6 @@ class BImpl : public B {
     }
 
   private:
-    A& a;
     BOOST_DESCRIBE_CLASS(BImpl, (B), (), (), ())
 };
 
@@ -133,7 +132,7 @@ class C {
 
 class CImpl : public C {
   public:
-    INJECT_CONSTRUCTOR(CImpl, (A & a, B& b)) : a(a), b(b) {
+    INJECT_CONSTRUCTOR(CImpl, (A&, B&)) {
         std::cout << "BeanWithRefConstructor CImpl constructor" << std::endl;
     }
 
@@ -142,9 +141,6 @@ class CImpl : public C {
     }
 
   private:
-    A& a;
-    B& b;
-
     BOOST_DESCRIBE_CLASS(CImpl, (C), (), (), ())
 };
 }  // namespace BeanWithRefConstructor
@@ -438,7 +434,7 @@ class B {
 
 class BImpl : public B {
   public:
-    INJECT_CONSTRUCTOR(explicit BImpl, (A * a)) : a(a) {
+    INJECT_CONSTRUCTOR(explicit BImpl, (A*)) {
         std::cout << "BeansWithRawPointerConstructor BImpl constructor" << std::endl;
     }
 
@@ -447,13 +443,12 @@ class BImpl : public B {
     }
 
   private:
-    A* a;
     BOOST_DESCRIBE_CLASS(BImpl, (B), (), (), ())
 };
 
 class B2Impl : public B {
   public:
-    INJECT_CONSTRUCTOR(explicit B2Impl, (A * a)) : a(a) {
+    INJECT_CONSTRUCTOR(explicit B2Impl, (A*)) {
         std::cout << "BeansWithRawPointerConstructor BImpl constructor" << std::endl;
     }
 
@@ -462,7 +457,6 @@ class B2Impl : public B {
     }
 
   private:
-    A* a;
     BOOST_DESCRIBE_CLASS(B2Impl, (B), (), (), ())
 };
 
@@ -550,5 +544,40 @@ class CImpl : public C {
     BOOST_DESCRIBE_CLASS(CImpl, (C), (), (), ())
 };
 }  // namespace BeansWithUniqueButHasSharedPtrConstructor
+
+namespace BeansWithoutInterfaceHeritated {
+
+class AImpl {
+  public:
+    INJECT_CONSTRUCTOR(AImpl, ()) {
+        std::cout << "BeansWithoutInterfaceHeritated AImpl constructor" << std::endl;
+    }
+
+    BOOST_DESCRIBE_CLASS(AImpl, (), (), (), ())
+};
+
+class BImpl {
+  public:
+    INJECT_CONSTRUCTOR(explicit BImpl, (const std::shared_ptr<AImpl> a)) : a(a) {
+        std::cout << "BeansWithoutInterfaceHeritated BImpl constructor" << std::endl;
+    }
+
+    std::shared_ptr<AImpl> a;
+    BOOST_DESCRIBE_CLASS(BImpl, (), (), (), ())
+};
+
+class CImpl {
+  public:
+    INJECT_CONSTRUCTOR(CImpl, (const std::shared_ptr<AImpl> a, std::unique_ptr<BImpl> b))
+        : a(a), b(std::move(b)) {
+        std::cout << "BeansWithoutInterfaceHeritated CImpl constructor" << std::endl;
+    }
+
+    std::shared_ptr<AImpl> a;
+    std::unique_ptr<BImpl> b;
+
+    BOOST_DESCRIBE_CLASS(CImpl, (), (), (), ())
+};
+}  // namespace BeansWithoutInterfaceHeritated
 
 #endif /* TEST_TESTBEANCLASS */

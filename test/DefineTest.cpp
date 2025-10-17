@@ -4,10 +4,10 @@
 
 #include "DefineTest.h"
 
-#include "Summer.h"
 #include "TestBeanClass.h"
 #include "boost/describe.hpp"
 #include "boost/hana.hpp"
+#include "summer/Summer.h"
 
 using namespace summer::bean::traits;
 using namespace NormalCase;

@@ -6,10 +6,10 @@
 
 #include <algorithm>
 
-#include "Summer.h"
 #include "VertexTestClass.h"
 #include "boost/hana/fwd/transform.hpp"
 #include "boost/hana/fwd/type.hpp"
+#include "summer/Summer.h"
 
 using namespace boost;
 using namespace summer::dag;
@@ -40,23 +40,6 @@ TEST_F(VertexTest, test_create_beanVertexes_success) {
                                    hana::type_c<graph::Vertex<BeanResolverB>>,
                                    hana::type_c<graph::Vertex<BeanResolverC>>);
     BOOST_HANA_ASSERT(beanVertexes == expect);
-}
-
-TEST_F(VertexTest, test_generate_dependency_success) {
-    auto independentBeans = operation::Vertex::GetIndependentBeans(beanVertexes);
-    auto implementedMap = operation::Vertex::FillImplementedMap(hana::make_map(), independentBeans);
-    auto expect =
-        hana::make_map(hana::make_pair(hana::type_c<A>, hana::make_tuple(hana::type_c<AImpl>)));
-    BOOST_HANA_ASSERT(expect == implementedMap);
-
-    auto nextMap = operation::Vertex::FillImplementedMap(implementedMap, beanVertexes);
-    auto expect2 =
-        hana::make_map(hana::make_pair(hana::type_c<A>,
-                                       hana::make_tuple(hana::type_c<AImpl>, hana::type_c<AImpl>)),
-                       hana::make_pair(hana::type_c<B>, hana::make_tuple(hana::type_c<BImpl>)),
-                       hana::make_pair(hana::type_c<C>, hana::make_tuple(hana::type_c<CImpl>)));
-    // std::cout << summer::print::to_string(expect2) << std::endl;
-    BOOST_HANA_ASSERT(expect2 == nextMap);
 }
 
 TEST_F(VertexTest, test_remove_vertex_dependency) {

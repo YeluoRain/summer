@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "boost/hana.hpp"
-#include "util/Print.h"
+#include "summer/util/Print.h"
 
 namespace summer::bean::constructor {
 namespace hana = boost::hana;

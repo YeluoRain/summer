@@ -6,8 +6,8 @@
 #define DAG_DETAIL_GRAPHOPERATION
 
 #include "boost/describe.hpp"
-#include "dag/Graph.h"
-#include "util/Collection.h"
+#include "summer/dag/Graph.h"
+#include "summer/util/Collection.h"
 
 namespace summer::dag::operation::detail {
 
