@@ -34,19 +34,19 @@ TEST_F(BeanTest, test_construct_beans_unique_ne_shared) {
     EXPECT_NE(c.get(), c1.get());
 }
 
-// todo: not support reference in constructor
+// todo : not support reference in constructor
 // TEST_F(BeanTest, test_construct_beans_with_ref_constructor) {
-//   using namespace BeanWithRefConstructor;
-//   using Factory = BeanFactory<CImpl, BImpl, AImpl>;
-//   auto a = Factory::GetShared<A>();
-//   auto b = Factory::GetShared<B>();
-//   auto c = Factory::GetShared<C>();
-//   auto a1 = Factory::GetShared<AImpl>();
-//   auto b1 = Factory::GetShared<BImpl>();
-//   auto c1 = Factory::GetShared<CImpl>();
-//   EXPECT_EQ(a.get(), a1.get());
-//   EXPECT_EQ(b.get(), b1.get());
-//   EXPECT_EQ(c.get(), c1.get());
+//     using namespace BeanWithRefConstructor;
+//     using Factory = BeanFactory<CImpl, BImpl, AImpl>;
+//     auto a = Factory::GetShared<A>();
+//     auto b = Factory::GetShared<B>();
+//     auto c = Factory::GetShared<C>();
+//     auto a1 = Factory::GetShared<AImpl>();
+//     auto b1 = Factory::GetShared<BImpl>();
+//     auto c1 = Factory::GetShared<CImpl>();
+//     EXPECT_EQ(a.get(), a1.get());
+//     EXPECT_EQ(b.get(), b1.get());
+//     EXPECT_EQ(c.get(), c1.get());
 // }
 
 TEST_F(BeanTest, test_construct_beans_with_unique_ptr) {
