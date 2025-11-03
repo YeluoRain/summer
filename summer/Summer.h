@@ -55,9 +55,6 @@ class BeanFactory {
   private:
     using ContainerType =
         decltype(bean::factory::Beans::CreateFactory(boost::hana::tuple_t<ArgTypes...>));
-    static auto GetBeanContainer() {
-        return bean::factory::Beans::CreateFactory(boost::hana::tuple_t<ArgTypes...>);
-    }
 
     static ContainerType container;
 };

@@ -40,7 +40,7 @@ class B {
 
 class BImpl : public B {
   public:
-    INJECT_CONSTRUCTOR(explicit BImpl, (const std::shared_ptr<A>& a)) : a(a) {
+    INJECT_EXPLICIT_CONSTRUCTOR(BImpl, (const std::shared_ptr<A>& a)) : a(a) {
         std::cout << "NormalCase BImpl constructor" << std::endl;
     }
 
@@ -84,6 +84,11 @@ class CImpl : public C {
 
     BOOST_DESCRIBE_CLASS(CImpl, (C), (), (), ())
 };
+
+inline CImpl* createCImpl(std::shared_ptr<A> a, std::shared_ptr<B> b) {
+    return new CImpl(a, b);
+}  // namespace NormalCase
+
 }  // namespace NormalCase
 
 namespace BeanWithRefConstructor {
@@ -113,7 +118,7 @@ class B {
 
 class BImpl : public B {
   public:
-    INJECT_CONSTRUCTOR(explicit BImpl, (A&)) {
+    INJECT_EXPLICIT_CONSTRUCTOR(BImpl, (A&)) {
         std::cout << "BeanWithRefConstructor BImpl constructor" << std::endl;
     }
 
@@ -177,7 +182,7 @@ class B {
 
 class BImpl : public B {
   public:
-    INJECT_CONSTRUCTOR(explicit BImpl, (std::shared_ptr<A> a)) : a(a) {
+    INJECT_EXPLICIT_CONSTRUCTOR(BImpl, (std::shared_ptr<A> a)) : a(a) {
         std::cout << "FactoryCreateCase BImpl constructor" << std::endl;
     }
 
@@ -277,7 +282,7 @@ class B {
 
 class BImpl : public B {
   public:
-    INJECT_CONSTRUCTOR(explicit BImpl, (std::shared_ptr<A> a)) : a(a) {
+    INJECT_EXPLICIT_CONSTRUCTOR(BImpl, (std::shared_ptr<A> a)) : a(a) {
         std::cout << "BeansWithListConstructor BImpl constructor" << std::endl;
     }
 
@@ -292,7 +297,7 @@ class BImpl : public B {
 
 class B2Impl : public B {
   public:
-    INJECT_CONSTRUCTOR(explicit B2Impl, (std::shared_ptr<A> a)) : a(a) {
+    INJECT_EXPLICIT_CONSTRUCTOR(B2Impl, (std::shared_ptr<A> a)) : a(a) {
         std::cout << "BeansWithListConstructor BImpl constructor" << std::endl;
     }
 
@@ -356,7 +361,7 @@ class B {
 
 class BImpl : public B {
   public:
-    INJECT_CONSTRUCTOR(explicit BImpl, (std::shared_ptr<A> a)) : a(a) {
+    INJECT_EXPLICIT_CONSTRUCTOR(BImpl, (std::shared_ptr<A> a)) : a(a) {
         std::cout << "BeansWithListConstructor BImpl constructor" << std::endl;
     }
 
@@ -371,7 +376,7 @@ class BImpl : public B {
 
 class B2Impl : public B {
   public:
-    INJECT_CONSTRUCTOR(explicit B2Impl, (std::shared_ptr<A> a)) : a(a) {
+    INJECT_EXPLICIT_CONSTRUCTOR(B2Impl, (std::shared_ptr<A> a)) : a(a) {
         std::cout << "BeansWithListConstructor BImpl constructor" << std::endl;
     }
 
@@ -434,7 +439,7 @@ class B {
 
 class BImpl : public B {
   public:
-    INJECT_CONSTRUCTOR(explicit BImpl, (A*)) {
+    INJECT_EXPLICIT_CONSTRUCTOR(BImpl, (A*)) {
         std::cout << "BeansWithRawPointerConstructor BImpl constructor" << std::endl;
     }
 
@@ -448,7 +453,7 @@ class BImpl : public B {
 
 class B2Impl : public B {
   public:
-    INJECT_CONSTRUCTOR(explicit B2Impl, (A*)) {
+    INJECT_EXPLICIT_CONSTRUCTOR(B2Impl, (A*)) {
         std::cout << "BeansWithRawPointerConstructor BImpl constructor" << std::endl;
     }
 
@@ -509,7 +514,7 @@ class B {
 
 class BImpl : public B {
   public:
-    INJECT_CONSTRUCTOR(explicit BImpl, (const std::shared_ptr<A> a)) : a(a) {
+    INJECT_EXPLICIT_CONSTRUCTOR(BImpl, (const std::shared_ptr<A> a)) : a(a) {
         std::cout << "BeansWithUniqueButHasSharedPtrConstructor BImpl constructor" << std::endl;
     }
 
@@ -558,7 +563,7 @@ class AImpl {
 
 class BImpl {
   public:
-    INJECT_CONSTRUCTOR(explicit BImpl, (const std::shared_ptr<AImpl> a)) : a(a) {
+    INJECT_EXPLICIT_CONSTRUCTOR(BImpl, (const std::shared_ptr<AImpl> a)) : a(a) {
         std::cout << "BeansWithoutInterfaceHeritated BImpl constructor" << std::endl;
     }
 

@@ -9,21 +9,21 @@
 #include "summer/dag/Graph.h"
 #include "summer/util/Collection.h"
 
-namespace summer::dag::operation::detail {
+namespace summer::dag::operation {
 
 namespace hana = boost::hana;
 namespace describe = boost::describe;
 namespace mp11 = boost::mp11;
 
-template <typename Bean, typename Enable = void>
+template <typename BeanType, typename Enable = void>
 struct GetDerivedBase {
     constexpr static auto Bases = hana::make_tuple();
 };
 
-template <typename Bean>
-struct GetDerivedBase<Bean, std::enable_if_t<describe::has_describe_bases<Bean>::value>> {
+template <typename BeanType>
+struct GetDerivedBase<BeanType, std::enable_if_t<describe::has_describe_bases<BeanType>::value>> {
     constexpr static auto Bases = [] {
-        using BaseDescriptors = describe::describe_bases<Bean, describe::mod_any_access>;
+        using BaseDescriptors = describe::describe_bases<BeanType, describe::mod_any_access>;
         using BaseTuple = mp11::mp_rename<BaseDescriptors, hana::tuple>;
         return hana::transform(
             BaseTuple(), [](auto base) { return hana::type_c<typename decltype(base)::type>; });
@@ -57,6 +57,6 @@ struct RemoveVertexDependencyFuncType {
     }
 };
 
-}  // namespace summer::dag::operation::detail
+}  // namespace summer::dag::operation
 
 #endif /* DAG_DETAIL_GRAPHOPERATION */

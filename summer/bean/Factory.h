@@ -40,8 +40,7 @@ struct Beans {
                 using BeanType = typename decltype(hana::typeid_(bean))::type;
                 auto parents = dag::operation::Vertex::GetAllParents(hana::make_tuple(bean));
                 auto creator = [creatorMap] {
-                    auto argTypes =
-                        traits::ConstructorTraits<decltype(&BeanType::_InjectedFactory)>::ARG_TYPES;
+                    auto argTypes = define::BeanResolver<BeanType>::Args;
                     auto args = hana::transform(argTypes, [&creatorMap](auto&& bean0) {
                         using ArgType = typename decltype(hana::typeid_(bean0))::type;
                         using RawArgType = typename traits::ArgTypeTraits<ArgType>::type;
@@ -50,7 +49,11 @@ struct Beans {
                         return constructor::BeanCreatorInvoker<ArgType>::Invoke(creators);
                     });
                     return hana::unpack(std::move(args), [](auto&&... args0) {
-                        return new BeanType(std::forward<decltype(args0)>(args0)...);
+                        if constexpr (std::is_function_v<BeanType>) {
+                            return BeanType(std::forward<decltype(args0)>(args0)...);
+                        } else {
+                            return new BeanType(std::forward<decltype(args0)>(args0)...);
+                        }
                     });
                 };
                 return MergeBeanMap(creatorMap, parents,

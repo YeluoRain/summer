@@ -66,9 +66,10 @@ template <typename T>
 struct ConstructorTraits : std::false_type {};
 
 template <typename R, typename... Args>
-struct ConstructorTraits<R (*)(Args...)> : std::true_type {
+struct ConstructorTraits<R(Args...)> : std::true_type {
     constexpr static std::size_t ARG_NUM = sizeof...(Args);
     constexpr static auto ARG_TYPES = boost::hana::make_tuple(boost::hana::type_c<Args>...);
+    constexpr static auto RET_TYPE = boost::hana::type_c<R>;
 };
 }  // namespace summer::bean::traits
 

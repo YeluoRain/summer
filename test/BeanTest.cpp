@@ -20,6 +20,20 @@ TEST_F(BeanTest, test_construct_beans_by_bean_factory) {
     EXPECT_EQ(c.get(), c1.get());
 }
 
+// TEST_F(BeanTest, test_construct_beans_with_creator_function) {
+//     using namespace NormalCase;
+//     using Factory = BeanFactory<BImpl, AImpl, createCImpl)>;
+//     auto a = Factory::GetShared<A>();
+//     auto b = Factory::GetShared<B>();
+//     auto c = Factory::GetShared<C>();
+//     auto a1 = Factory::GetShared<AImpl>();
+//     auto b1 = Factory::GetShared<BImpl>();
+//     auto c1 = Factory::GetShared<CImpl>();
+//     EXPECT_EQ(a.get(), a1.get());
+//     EXPECT_EQ(b.get(), b1.get());
+//     EXPECT_EQ(c.get(), c1.get());
+// }
+
 TEST_F(BeanTest, test_construct_beans_unique_ne_shared) {
     using namespace NormalCase;
     using Factory = BeanFactory<CImpl, BImpl, AImpl>;
