@@ -60,15 +60,20 @@ struct BeanResolverImpl {
 };
 template <typename T>
 struct BeanResolverImpl<T, std::enable_if_t<describe::has_describe_bases<T>::value>>
-    : BeanResolverHelper<typename T::FactortMethodType> {};
+    : BeanResolverHelper<typename T::FactortMethodType> {
+    using BeanType = T;
+};
 
 template <typename T>
-struct BeanResolverImpl<T, std::enable_if_t<std::is_function_v<T>>> : BeanResolverHelper<T> {};
+struct BeanResolverImpl<T, std::enable_if_t<traits::IsCreatorWrapper<T>::value>>
+    : BeanResolverHelper<decltype(T::Creator)> {
+    using BeanType = typename traits::ConstructorTraits<decltype(T::Creator)>::RetType;
+};
 }  // namespace detail
 
 template <typename T>
 struct BeanResolver : detail::BeanResolverImpl<T> {
-    using BeanType = T;
+    using BeanType = typename detail::BeanResolverImpl<T>::BeanType;
     constexpr static auto ImplementOf = detail::BeanResolverImpl<T>::ImplementOf;
     constexpr static auto DependOn = detail::BeanResolverImpl<T>::DependOn;
     constexpr static auto Args = detail::BeanResolverImpl<T>::Args;
