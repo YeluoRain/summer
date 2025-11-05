@@ -6,7 +6,7 @@
 #define SUMMER_DAG_VERTEX
 
 #include "summer/bean/Define.h"
-#include "summer/dag/detail/GraphOperation.h"
+#include "summer/dag/GraphOperation.h"
 #include "summer/util/Print.h"
 
 namespace summer::dag::operation {
@@ -55,7 +55,7 @@ struct Vertex {
                 auto nextParents = util::collection::tuple::Merge(allParents, lefts);
                 auto leftParents = hana::transform(lefts, [](auto&& left) {
                     using Type = typename decltype(hana::typeid_(left))::type;
-                    return detail::GetDerivedBase<Type>::Bases;
+                    return GetDerivedBase<Type>::Bases;
                 });
                 auto nextLefts = hana::unpack(leftParents, util::collection::tuple::Merge);
                 return hana::make_tuple(nextParents, nextLefts);
@@ -72,8 +72,8 @@ struct Vertex {
             hana::unpack(beans, util::collection::tuple::Merge ^ hana::on ^ getImplemented);
         auto removeDependency = [](const auto& vertex) {
             using VertexType = typename decltype(hana::typeid_(vertex))::type;
-            using NewBeanResolver = detail::ChangeableBeanResolver<typename VertexType::NodeType,
-                                                                   decltype(IndependentTypes)>;
+            using NewBeanResolver =
+                ChangeableBeanResolver<typename VertexType::NodeType, decltype(IndependentTypes)>;
             return hana::type_c<graph::Vertex<NewBeanResolver>>;
         };
         return hana::unpack(vertexes, hana::make_tuple ^ hana::on ^ removeDependency);

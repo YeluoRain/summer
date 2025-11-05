@@ -66,10 +66,48 @@ template <typename T>
 struct ConstructorTraits : std::false_type {};
 
 template <typename R, typename... Args>
+struct ConstructorTraits<R(Args...)> : std::true_type {
+    constexpr static std::size_t ARG_NUM = sizeof...(Args);
+    constexpr static auto ARG_TYPES = boost::hana::make_tuple(boost::hana::type_c<Args>...);
+    constexpr static auto RET_TYPE = boost::hana::type_c<R>;
+    using RetType = typename ArgTypeTraits<R>::type;
+};
+
+template <typename R, typename... Args>
 struct ConstructorTraits<R (*)(Args...)> : std::true_type {
     constexpr static std::size_t ARG_NUM = sizeof...(Args);
     constexpr static auto ARG_TYPES = boost::hana::make_tuple(boost::hana::type_c<Args>...);
+    constexpr static auto RET_TYPE = boost::hana::type_c<R>;
+    using RetType = typename ArgTypeTraits<R>::type;
 };
+
+template <typename R, typename... Args>
+struct ConstructorTraits<R (*const)(Args...)> : std::true_type {
+    constexpr static std::size_t ARG_NUM = sizeof...(Args);
+    constexpr static auto ARG_TYPES = boost::hana::make_tuple(boost::hana::type_c<Args>...);
+    constexpr static auto RET_TYPE = boost::hana::type_c<R>;
+    using RetType = typename ArgTypeTraits<R>::type;
+};
+
+template <typename R, typename... Args>
+struct ConstructorTraits<std::function<R(Args...)>> : std::true_type {
+    constexpr static std::size_t ARG_NUM = sizeof...(Args);
+    constexpr static auto ARG_TYPES = boost::hana::make_tuple(boost::hana::type_c<Args>...);
+    constexpr static auto RET_TYPE = boost::hana::type_c<R>;
+    using RetType = typename ArgTypeTraits<R>::type;
+};
+
+template <auto CreatorFunc>
+struct CreatorWrapper {
+    constexpr static auto Creator = CreatorFunc;
+};
+
+template <typename T, typename Enable = void>
+struct IsCreatorWrapper : std::false_type {};
+
+template <typename T>
+struct IsCreatorWrapper<T, std::void_t<decltype(T::Creator)>> : std::true_type {};
+
 }  // namespace summer::bean::traits
 
 #endif  // TRAITS_H

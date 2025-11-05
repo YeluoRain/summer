@@ -70,3 +70,23 @@ TEST_F(VertexTest, test_get_all_parents) {
     auto output = operation::Vertex::GetAllParents(input);
     std::cout << print::ToString(output) << std::endl;
 }
+
+A* createA(B*, C*) {
+    return new AImpl();
+}
+
+TEST_F(VertexTest, test_creator_wrapper_traits) {
+    using CreatorWrapperType = summer::bean::traits::CreatorWrapper<createA>;
+    auto creator = CreatorWrapperType::Creator;
+    auto a = creator(nullptr, nullptr);
+    a->testA();
+    static_assert(summer::bean::traits::IsCreatorWrapper<CreatorWrapperType>::value,
+                  "CreatorWrapperType should be recognized as CreatorWrapper");
+    using Resolver = summer::bean::define::BeanResolver<CreatorWrapperType>;
+    using ConstructorTraits = summer::bean::traits::ConstructorTraits<decltype(createA)>;
+    std::cout << print::ToString(ConstructorTraits::RET_TYPE) << '\n';
+    std::cout << print::ToString(Resolver::ImplementOf) << '\n';
+    std::cout << print::ToString(Resolver::DependOn) << '\n';
+    BOOST_HANA_CHECK(Resolver::ImplementOf == hana::make_tuple());
+    BOOST_HANA_CHECK(Resolver::DependOn == hana::make_tuple(hana::type_c<B>, hana::type_c<C>));
+}

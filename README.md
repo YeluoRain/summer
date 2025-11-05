@@ -54,7 +54,8 @@ public:
 // BImpl依赖了A，实现了B
 class BImpl : public B {
 public:
-  INJECT_CONSTRUCTOR(explicit BImpl, (const std::shared_ptr<A> &a)) : a(a) {
+  // INJECT_EXPLICIT_CONSTRUCTOR 在 INJECT_CONSTRUCTOR基础之上增加了explicit关键字
+  INJECT_EXPLICIT_CONSTRUCTOR(BImpl, (const std::shared_ptr<A> &a)) : a(a) {
     std::cout << "NormalCase BImpl constructor" << std::endl;
   }
 
@@ -113,16 +114,16 @@ using namespace summer;
 TEST_F(BeanTest, test_construct_beans_by_bean_factory) {
   // 将拥有正确依赖关系的三个类放入BeanFactory模板参数中
   // C++难以支持类似Java的Scan Package的能力，这种方案是一种妥协
-  using Factory = BeanFactory<CImpl, BImpl, AImpl>;
+  auto container = ContainerBuilder<>().WithBeans<CImpl, BImpl, AImpl>().Build();
   // 通过Factory的静态方法，我们可以在业务最上层取出相应的接口类
   // GetShared取出的是std::share_ptr类型的对象指针
-  auto a = Factory::GetShared<A>();
-  auto b = Factory::GetShared<B>();
-  auto c = Factory::GetShared<C>();
+  auto a = container.GetShared<A>();
+  auto b = container.GetShared<B>();
+  auto c = container.GetShared<C>();
   // 如果你比较无聊，你甚至也可以取出实现类
-  auto a1 = Factory::GetShared<AImpl>();
-  auto b1 = Factory::GetShared<BImpl>();
-  auto c1 = Factory::GetShared<CImpl>();
+  auto a1 = container.GetShared<AImpl>();
+  auto b1 = container.GetShared<BImpl>();
+  auto c1 = container.GetShared<CImpl>();
   // 但两种方式返回的同一个内存地址
   EXPECT_EQ(a.get(), a1.get());
   EXPECT_EQ(b.get(), b1.get());
@@ -131,6 +132,43 @@ TEST_F(BeanTest, test_construct_beans_by_bean_factory) {
 ```
 
 至此，我们成功对三个拥有合理依赖关系的类，进行了自动依赖注入。
+
+#### 工厂方法注入
+
+当然，我们在实际开发过程中，待注入的类不一定有具体的构造方法，取而代之是工厂方法+基类的使用场景，这个时候我们要通过工厂方法注入。
+
+假定继承上述的案例，我们定义一个`CImpl`类的工厂方法：
+
+```c++
+// 没错，工厂方法也可以类似于构造函数注入的方式，从IoC容器中获取到其他的实体类
+inline CImpl* createCImpl(std::shared_ptr<A> a, std::shared_ptr<B> b) {
+    return new CImpl(a, b);
+}
+```
+
+此场景下，我们的注入方式为：
+
+```c++
+TEST_F(BeanTest, test_construct_beans_with_creator_function) {
+    auto container = ContainerBuilder<>()
+                         // 这里不再注入CImpl
+                         .WithBeans<BImpl, AImpl>()
+                         // 取而代之，我们注入相应的工厂方法
+                         .WithCreators<createCImpl>()
+                         .Build();
+    auto a = container.GetShared<A>();
+    auto b = container.GetShared<B>();
+    auto c = container.GetShared<C>();
+    auto a1 = container.GetShared<AImpl>();
+    auto b1 = container.GetShared<BImpl>();
+    auto c1 = container.GetShared<CImpl>();
+    EXPECT_EQ(a.get(), a1.get());
+    EXPECT_EQ(b.get(), b1.get());
+    EXPECT_EQ(c.get(), c1.get());
+}
+```
+
+依旧可以相当简化地进行依赖注入过程。
 
 #### 构造函数入参问题
 
