@@ -103,6 +103,64 @@ inline A* createA() {
 
 }  // namespace NormalCase
 
+namespace BeanWithNoMacro {
+class A {};
+
+class B {
+  public:
+    virtual ~B() = default;
+    virtual void testB() = 0;
+};
+
+class BImpl : public B {
+  public:
+    INJECT_EXPLICIT_CONSTRUCTOR(BImpl, (const std::shared_ptr<A>& a)) : a(a) {
+        std::cout << "NormalCase BImpl constructor" << std::endl;
+    }
+
+    void testB() override {
+        std::cout << "print b test" << std::endl;
+    }
+
+    ~BImpl() override {
+        std::cout << "NormalCase BImpl destructor" << std::endl;
+    }
+
+  private:
+    std::shared_ptr<A> a;
+    BOOST_DESCRIBE_CLASS(BImpl, (B), (), (), ())
+};
+
+class C {
+  public:
+    virtual ~C() = default;
+    virtual void testC() = 0;
+};
+
+class CImpl : public C {
+  public:
+    INJECT_CONSTRUCTOR(CImpl, (const std::shared_ptr<A>& a, const std::shared_ptr<B>& b))
+        : a(a), b(b) {
+        std::cout << "NormalCase CImpl constructor" << std::endl;
+    }
+
+    void testC() override {
+        std::cout << "print c test" << std::endl;
+    }
+
+    ~CImpl() override {
+        std::cout << "NormalCase CImpl destructor" << std::endl;
+    }
+
+  private:
+    std::shared_ptr<A> a;
+    std::shared_ptr<B> b;
+
+    BOOST_DESCRIBE_CLASS(CImpl, (C), (), (), ())
+};
+
+}  // namespace BeanWithNoMacro
+
 namespace BeanWithRefConstructor {
 class A {
   public:

@@ -67,6 +67,16 @@ struct BeanResolverImpl<T, std::enable_if_t<traits::IsCreatorWrapper<T>::value>>
     : BeanResolverHelper<decltype(T::Creator)> {
     using BeanType = typename traits::ConstructorTraits<decltype(T::Creator)>::RetType;
 };
+
+template <typename T>
+struct BeanResolverImpl<T, std::enable_if_t<!describe::has_describe_bases<T>::value &&
+                                            !traits::IsCreatorWrapper<T>::value &&
+                                            std::is_default_constructible_v<T>>> {
+    using BeanType = T;
+    constexpr static auto ImplementOf = boost::hana::make_tuple();
+    constexpr static auto DependOn = boost::hana::make_tuple();
+    constexpr static auto Args = boost::hana::make_tuple();
+};
 }  // namespace detail
 
 template <typename T>

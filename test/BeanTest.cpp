@@ -162,3 +162,14 @@ TEST_F(BeanTest, test_construct_beans_without_interface_heritated) {
     EXPECT_NE(b.get(), c->b.get());
     EXPECT_EQ(a.get(), b->a.get());
 }
+
+TEST_F(BeanTest, test_construct_beans_with_no_macro) {
+    using namespace BeanWithNoMacro;
+    auto container = ContainerBuilder<>().WithBeans<CImpl, BImpl, A>().Build();
+    auto a = container.GetShared<A>();
+    auto b = container.GetShared<BImpl>();
+    auto c = container.GetShared<CImpl>();
+    EXPECT_NE(a, nullptr);
+    EXPECT_NE(b, nullptr);
+    EXPECT_NE(c, nullptr);
+}
