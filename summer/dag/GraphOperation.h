@@ -32,29 +32,13 @@ struct GetDerivedBase<BeanType, std::enable_if_t<describe::has_describe_bases<Be
 
 template <typename BeanResolver, typename IndependentTypes>
 struct ChangeableBeanResolver {
+    using Type = typename BeanResolver::Type;
     using BeanType = typename BeanResolver::BeanType;
     constexpr static auto DependOn = hana::remove_if(
         BeanResolver::DependOn, [](auto&& dep) { return hana::contains(IndependentTypes{}, dep); });
     constexpr static auto ImplementOf = BeanResolver::ImplementOf;
-};
 
-struct RemoveVertexDependencyFuncType {
-    template <typename IndependentBeans, typename BeanVertexes>
-    constexpr auto operator()(BeanVertexes&& vertexes, IndependentBeans&& beans) const {
-        auto getImplemented = [](const auto& bean) {
-            using VertexType = typename decltype(hana::typeid_(bean))::type;
-            return VertexType::InList;
-        };
-        auto IndependentTypes =
-            hana::unpack(beans, util::collection::tuple::Merge ^ hana::on ^ getImplemented);
-        auto removeDependency = [&IndependentTypes](const auto& vertex) {
-            using VertexType = typename decltype(hana::typeid_(vertex))::type;
-            using NewBeanResolver =
-                ChangeableBeanResolver<typename VertexType::NodeType, decltype(IndependentTypes)>;
-            return hana::type_c<graph::Vertex<NewBeanResolver>>;
-        };
-        return hana::unpack(vertexes, hana::make_tuple ^ hana::on ^ removeDependency);
-    }
+    constexpr static auto Args = BeanResolver::Args;
 };
 
 }  // namespace summer::dag::operation

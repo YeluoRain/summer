@@ -22,18 +22,41 @@ TEST_F(BeanTest, test_construct_beans_by_bean_factory) {
 
 TEST_F(BeanTest, test_construct_beans_with_creator_function) {
     using namespace NormalCase;
-    auto container = ContainerBuilder<>()
-                         .WithBeans<BImpl, AImpl>()
-                         .WithCreators<createCImpl>()  // 如果需要添加工厂方法
-                         .Build();
+    auto container = ContainerBuilder<>().WithBeans<BImpl, AImpl>().WithCreators<createC>().Build();
     auto a = container.GetShared<A>();
     auto b = container.GetShared<B>();
     auto c = container.GetShared<C>();
     auto a1 = container.GetShared<AImpl>();
     auto b1 = container.GetShared<BImpl>();
-    auto c1 = container.GetShared<CImpl>();
+    // auto c1 = container.GetShared<CImpl>();
     EXPECT_EQ(a.get(), a1.get());
     EXPECT_EQ(b.get(), b1.get());
+    EXPECT_NE(c.get(), nullptr);
+}
+
+TEST_F(BeanTest, test_construct_all_beans_with_creator_function) {
+    using namespace NormalCase;
+    auto container = ContainerBuilder<>().WithCreators<createC, createA, createB>().Build();
+    auto a = container.GetShared<A>();
+    auto b = container.GetShared<B>();
+    auto c = container.GetShared<C>();
+    // auto a1 = container.GetShared<AImpl>();
+    // auto b1 = container.GetShared<BImpl>();
+    // auto c1 = container.GetShared<CImpl>();
+    EXPECT_NE(a.get(), nullptr);
+    EXPECT_NE(b.get(), nullptr);
+    EXPECT_NE(c.get(), nullptr);
+}
+
+TEST_F(BeanTest, test_construct_all_beans_with_creator_function_mixed_with_interface_and_impl) {
+    using namespace NormalCase;
+    auto container = ContainerBuilder<>().WithCreators<createCImpl, createA, createB>().Build();
+    auto a = container.GetShared<A>();
+    auto b = container.GetShared<B>();
+    auto c = container.GetShared<C>();
+    auto c1 = container.GetShared<CImpl>();
+    EXPECT_NE(a.get(), nullptr);
+    EXPECT_NE(b.get(), nullptr);
     EXPECT_EQ(c.get(), c1.get());
 }
 
