@@ -85,9 +85,21 @@ class CImpl : public C {
     BOOST_DESCRIBE_CLASS(CImpl, (C), (), (), ())
 };
 
+inline C* createC(std::shared_ptr<A> a, std::shared_ptr<B> b) {
+    return new CImpl(a, b);
+}
+
 inline CImpl* createCImpl(std::shared_ptr<A> a, std::shared_ptr<B> b) {
     return new CImpl(a, b);
-}  // namespace NormalCase
+}
+
+inline B* createB(std::shared_ptr<A> a) {
+    return new BImpl(a);
+}
+
+inline A* createA() {
+    return new AImpl();
+}
 
 }  // namespace NormalCase
 

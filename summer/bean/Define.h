@@ -54,9 +54,7 @@ struct BeanResolverHelper {
 
 template <typename T, typename Enable = void>
 struct BeanResolverImpl {
-    static_assert(false,
-                  "Target class not annotationed with boost.descibe,"
-                  " did you use BOOST_DESCRIBE_BASE?");
+    using BeanType = T;
 };
 template <typename T>
 struct BeanResolverImpl<T, std::enable_if_t<describe::has_describe_bases<T>::value>>
@@ -73,6 +71,7 @@ struct BeanResolverImpl<T, std::enable_if_t<traits::IsCreatorWrapper<T>::value>>
 
 template <typename T>
 struct BeanResolver : detail::BeanResolverImpl<T> {
+    using Type = T;
     using BeanType = typename detail::BeanResolverImpl<T>::BeanType;
     constexpr static auto ImplementOf = detail::BeanResolverImpl<T>::ImplementOf;
     constexpr static auto DependOn = detail::BeanResolverImpl<T>::DependOn;

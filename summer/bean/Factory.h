@@ -32,14 +32,14 @@ struct Beans {
         using namespace boost;
         auto independentVertexes =
             dag::operation::Vertex::GetBeansInOrder(dag::operation::Vertex::ToVertexes(beans));
-        auto independentBeans =
-            hana::transform(independentVertexes, dag::operation::Vertex::ToBean);
+        auto independentBeanResolvers =
+            hana::transform(independentVertexes, dag::operation::Vertex::ToBeanResovler);
         auto beanCreatorMap = hana::make_map();
         return hana::fold_left(
-            independentBeans, beanCreatorMap, [](auto&& creatorMap, auto&& bean) {
-                using BeanType = typename decltype(hana::typeid_(bean))::type;
-                using BeanResolverType = define::BeanResolver<BeanType>;
-                auto parents = dag::operation::Vertex::GetAllParents(hana::make_tuple(bean));
+            independentBeanResolvers, beanCreatorMap, [](auto&& creatorMap, auto&& beanResolver) {
+                using BeanResolverType = typename decltype(hana::typeid_(beanResolver))::type;
+                using BeanType = typename BeanResolverType::BeanType;
+                auto parents = dag::operation::Vertex::GetAllParents(hana::tuple_t<BeanType>);
                 auto creator = [creatorMap] {
                     auto argTypes = BeanResolverType::Args;
                     auto args = hana::transform(argTypes, [&creatorMap](auto&& bean0) {
@@ -50,8 +50,10 @@ struct Beans {
                         return constructor::BeanCreatorInvoker<ArgType>::Invoke(creators);
                     });
                     return hana::unpack(std::move(args), [](auto&&... args0) {
-                        if constexpr (traits::IsCreatorWrapper<BeanType>::value) {
-                            return BeanType::Creator(std::forward<decltype(args0)>(args0)...);
+                        if constexpr (traits::IsCreatorWrapper<
+                                          typename BeanResolverType::Type>::value) {
+                            return BeanResolverType::Type::Creator(
+                                std::forward<decltype(args0)>(args0)...);
                         } else {
                             return new BeanType(std::forward<decltype(args0)>(args0)...);
                         }

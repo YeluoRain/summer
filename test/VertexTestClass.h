@@ -81,22 +81,29 @@ class A2 : public A1 {
 };
 
 struct BeanResolverA {
+    using Type = AImpl;
     using BeanType = AImpl;
     constexpr static auto DependOn = boost::hana::make_tuple();
     constexpr static auto ImplementOf = boost::hana::make_tuple(boost::hana::type_c<A>);
+    constexpr static auto Args = boost::hana::make_tuple();
 };
 
 struct BeanResolverB {
+    using Type = BImpl;
     using BeanType = BImpl;
     constexpr static auto DependOn = boost::hana::make_tuple(boost::hana::type_c<A>);
     constexpr static auto ImplementOf = boost::hana::make_tuple(boost::hana::type_c<B>);
+    constexpr static auto Args = boost::hana::make_tuple(boost::hana::type_c<std::shared_ptr<A>>);
 };
 
 struct BeanResolverC {
+    using Type = CImpl;
     using BeanType = CImpl;
     constexpr static auto DependOn =
         boost::hana::make_tuple(boost::hana::type_c<A>, boost::hana::type_c<B>);
     constexpr static auto ImplementOf = boost::hana::make_tuple(boost::hana::type_c<C>);
+    constexpr static auto Args = boost::hana::make_tuple(boost::hana::type_c<std::shared_ptr<A>>,
+                                                         boost::hana::type_c<std::shared_ptr<B>>);
 };
 
 #endif  // CCTEST_TESTCLASS_H
