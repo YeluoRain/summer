@@ -7,8 +7,6 @@
 
 #include <memory>
 
-#include "boost/describe.hpp"
-#include "boost/mp11.hpp"
 #include "summer/bean/Traits.h"
 #include "summer/dag/GraphOperation.h"
 
