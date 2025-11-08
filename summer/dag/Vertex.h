@@ -75,7 +75,7 @@ struct Vertex {
         return hana::unpack(vertexes, hana::make_tuple ^ hana::on ^ removeDependency);
     };
 
-    static constexpr auto ChecHasIndependentBeans = [](auto&& vertexes) {
+    static constexpr auto CheckHasIndependentBeans = [](auto&& vertexes) {
         return hana::any_of(vertexes, [](const auto& vertex) {
             using VertexType = typename decltype(hana::typeid_(vertex))::type;
             return VertexType::OutDegree == hana::size_c<0>;
@@ -98,7 +98,7 @@ struct Vertex {
                 auto independentVertexes = hana::at(context0, hana::int_c<0>);
                 // 第三个为剩下的点
                 auto vertexes = hana::at(context0, hana::int_c<2>);
-                auto checkResult = ChecHasIndependentBeans(vertexes);
+                auto checkResult = CheckHasIndependentBeans(vertexes);
                 if constexpr (hana::not_(checkResult)) {
                     auto nextBeans = util::collection::tuple::RemoveDuplicates(
                         hana::flatten(hana::transform(vertexes, [](const auto& vertex) {
