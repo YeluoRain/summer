@@ -114,16 +114,16 @@ using namespace summer;
 TEST_F(BeanTest, test_construct_beans_by_bean_factory) {
   // 将拥有正确依赖关系的三个类放入BeanFactory模板参数中
   // C++难以支持类似Java的Scan Package的能力，这种方案是一种妥协
-  auto container = ContainerBuilder<>().WithBeans<CImpl, BImpl, AImpl>().Build();
-  // 通过Factory的静态方法，我们可以在业务最上层取出相应的接口类
+  auto factory = FactoryBuilder<>().WithBeans<CImpl, BImpl, AImpl>().Build();
+  // 通过Factory的方法，我们可以在业务最上层取出相应的接口类
   // GetShared取出的是std::share_ptr类型的对象指针
-  auto a = container.GetShared<A>();
-  auto b = container.GetShared<B>();
-  auto c = container.GetShared<C>();
+  auto a = factory.GetShared<A>();
+  auto b = factory.GetShared<B>();
+  auto c = factory.GetShared<C>();
   // 如果你比较无聊，你甚至也可以取出实现类
-  auto a1 = container.GetShared<AImpl>();
-  auto b1 = container.GetShared<BImpl>();
-  auto c1 = container.GetShared<CImpl>();
+  auto a1 = factory.GetShared<AImpl>();
+  auto b1 = factory.GetShared<BImpl>();
+  auto c1 = factory.GetShared<CImpl>();
   // 但两种方式返回的同一个内存地址
   EXPECT_EQ(a.get(), a1.get());
   EXPECT_EQ(b.get(), b1.get());
@@ -150,18 +150,18 @@ inline CImpl* createCImpl(std::shared_ptr<A> a, std::shared_ptr<B> b) {
 
 ```c++
 TEST_F(BeanTest, test_construct_beans_with_creator_function) {
-    auto container = ContainerBuilder<>()
+    auto factory = FactoryBuilder<>()
                          // 这里不再注入CImpl
                          .WithBeans<BImpl, AImpl>()
                          // 取而代之，我们注入相应的工厂方法
                          .WithCreators<createCImpl>()
                          .Build();
-    auto a = container.GetShared<A>();
-    auto b = container.GetShared<B>();
-    auto c = container.GetShared<C>();
-    auto a1 = container.GetShared<AImpl>();
-    auto b1 = container.GetShared<BImpl>();
-    auto c1 = container.GetShared<CImpl>();
+    auto a = factory.GetShared<A>();
+    auto b = factory.GetShared<B>();
+    auto c = factory.GetShared<C>();
+    auto a1 = factory.GetShared<AImpl>();
+    auto b1 = factory.GetShared<BImpl>();
+    auto c1 = factory.GetShared<CImpl>();
     EXPECT_EQ(a.get(), a1.get());
     EXPECT_EQ(b.get(), b1.get());
     EXPECT_EQ(c.get(), c1.get());
