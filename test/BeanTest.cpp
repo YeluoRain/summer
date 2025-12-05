@@ -99,8 +99,8 @@ TEST_F(BeanTest, test_construct_beans_with_list_constructor) {
     auto b2 = factory.GetShared<B2Impl>();
     auto c1 = factory.GetShared<CImpl>();
     EXPECT_EQ(c.get(), c1.get());
-    EXPECT_TRUE(c1->bs.front().get() == b.get());
-    EXPECT_TRUE(c1->bs.back().get() == b2.get());
+    EXPECT_TRUE(c1->_bs.front().get() == b.get());
+    EXPECT_TRUE(c1->_bs.back().get() == b2.get());
 }
 
 TEST_F(BeanTest, test_construct_beans_with_list_constructor_using_getList) {
@@ -120,12 +120,12 @@ TEST_F(BeanTest, test_construct_beans_with_list_unique_ptr_constructor) {
     auto b2 = factory.GetShared<B2Impl>();
     auto c1 = factory.GetShared<CImpl>();
     EXPECT_EQ(c.get(), c1.get());
-    EXPECT_FALSE(std::find_if(c1->bs.begin(), c1->bs.end(), [&](const std::unique_ptr<B>& ptr) {
+    EXPECT_FALSE(std::find_if(c1->_bs.begin(), c1->_bs.end(), [&](const std::unique_ptr<B>& ptr) {
                      return ptr.get() == b.get();
-                 }) != c1->bs.end());
-    EXPECT_FALSE(std::find_if(c1->bs.begin(), c1->bs.end(), [&](const std::unique_ptr<B>& ptr) {
+                 }) != c1->_bs.end());
+    EXPECT_FALSE(std::find_if(c1->_bs.begin(), c1->_bs.end(), [&](const std::unique_ptr<B>& ptr) {
                      return ptr.get() == b2.get();
-                 }) != c1->bs.end());
+                 }) != c1->_bs.end());
 }
 
 TEST_F(BeanTest, test_construct_beans_with_raw_pointer_constructor) {
@@ -137,9 +137,9 @@ TEST_F(BeanTest, test_construct_beans_with_raw_pointer_constructor) {
     auto b2 = factory.GetShared<B2Impl>();
     auto c1 = factory.GetShared<CImpl>();
     EXPECT_EQ(c.get(), c1.get());
-    EXPECT_TRUE(c1->bs.front() == b.get());
-    EXPECT_TRUE(c1->bs.back() == b2.get());
-    EXPECT_TRUE(c1->a == a.get());
+    EXPECT_TRUE(c1->_bs.front() == b.get());
+    EXPECT_TRUE(c1->_bs.back() == b2.get());
+    EXPECT_TRUE(c1->_a == a.get());
 }
 
 TEST_F(BeanTest, test_construct_beans_with_unique_but_has_nested_shared_ptr_constructor) {
@@ -150,7 +150,7 @@ TEST_F(BeanTest, test_construct_beans_with_unique_but_has_nested_shared_ptr_cons
     auto b = factory.GetShared<BImpl>();
     auto c1 = factory.GetShared<CImpl>();
     EXPECT_EQ(c.get(), c1.get());
-    EXPECT_NE(b.get(), c1->b.get());
+    EXPECT_NE(b.get(), c1->_b.get());
 }
 
 TEST_F(BeanTest, test_construct_beans_without_interface_heritated) {
@@ -159,8 +159,8 @@ TEST_F(BeanTest, test_construct_beans_without_interface_heritated) {
     auto a = factory.GetShared<AImpl>();
     auto b = factory.GetShared<BImpl>();
     auto c = factory.GetShared<CImpl>();
-    EXPECT_NE(b.get(), c->b.get());
-    EXPECT_EQ(a.get(), b->a.get());
+    EXPECT_NE(b.get(), c->_b.get());
+    EXPECT_EQ(a.get(), b->_a.get());
 }
 
 TEST_F(BeanTest, test_construct_beans_with_no_macro) {
