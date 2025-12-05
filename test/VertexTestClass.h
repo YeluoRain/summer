@@ -33,14 +33,14 @@ class B {
 
 class BImpl : public B {
   public:
-    explicit BImpl(std::shared_ptr<A>& a) : a(a) {}
+    explicit BImpl(std::shared_ptr<A>& a) : _a(a) {}
 
     void testB() override {
         std::cout << "print test" << std::endl;
     }
 
   private:
-    std::shared_ptr<A> a;
+    std::shared_ptr<A> _a;
     BOOST_DESCRIBE_CLASS(BImpl, (B), (), (), ())
 };
 
@@ -51,15 +51,15 @@ class C {
 
 class CImpl : public C {
   public:
-    explicit CImpl(std::shared_ptr<A>& a, std::shared_ptr<B>& b) : a(a), b(b) {}
+    explicit CImpl(std::shared_ptr<A>& a, std::shared_ptr<B>& b) : _a(a), _b(b) {}
 
     void testC() override {
         std::cout << "print test" << std::endl;
     }
 
   private:
-    std::shared_ptr<A> a;
-    std::shared_ptr<B> b;
+    std::shared_ptr<A> _a;
+    std::shared_ptr<B> _b;
 
     BOOST_DESCRIBE_CLASS(CImpl, (C), (), (), ())
 };
