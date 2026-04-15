@@ -101,7 +101,8 @@ class BeanFactory {
      * The shared instances will be recreated next time they are requested.
      */
     void Reset() {
-        hana::for_each(m_container[hana::size_c<1>], [&](auto&& creator) { creator->Reset(); });
+        hana::for_each(m_container[hana::size_c<1>],
+                       [&](auto&& creator) { hana::second(creator)->Reset(); });
     }
 
   private:

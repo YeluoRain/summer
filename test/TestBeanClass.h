@@ -655,4 +655,77 @@ class CImpl {
 };
 }  // namespace BeansWithoutInterfaceHeritated
 
+namespace LifecycleTest {
+static std::vector<std::string> g_destructorOrder;
+
+class A {
+  public:
+    virtual ~A() {
+        g_destructorOrder.push_back("A");
+    }
+};
+
+class AImpl : public A {
+  public:
+    INJECT_CONSTRUCTOR(AImpl, ()) {
+        std::cout << "LifecycleTest AImpl constructor" << std::endl;
+    }
+
+    ~AImpl() override {
+        std::cout << "LifecycleTest AImpl destructor" << std::endl;
+        g_destructorOrder.push_back("AImpl");
+    }
+
+  private:
+    BOOST_DESCRIBE_CLASS(AImpl, (A), (), (), ())
+};
+
+class B {
+  public:
+    virtual ~B() {
+        g_destructorOrder.push_back("B");
+    }
+};
+
+class BImpl : public B {
+  public:
+    INJECT_EXPLICIT_CONSTRUCTOR(BImpl, (const std::shared_ptr<A>& a)) : _a(a) {
+        std::cout << "LifecycleTest BImpl constructor" << std::endl;
+    }
+
+    ~BImpl() override {
+        std::cout << "LifecycleTest BImpl destructor" << std::endl;
+        g_destructorOrder.push_back("BImpl");
+    }
+
+    std::shared_ptr<A> _a;
+    BOOST_DESCRIBE_CLASS(BImpl, (B), (), (), ())
+};
+
+class C {
+  public:
+    virtual ~C() {
+        g_destructorOrder.push_back("C");
+    }
+};
+
+class CImpl : public C {
+  public:
+    INJECT_CONSTRUCTOR(CImpl, (const std::shared_ptr<A>& a, const std::shared_ptr<B>& b))
+        : _a(a), _b(b) {
+        std::cout << "LifecycleTest CImpl constructor" << std::endl;
+    }
+
+    ~CImpl() override {
+        std::cout << "LifecycleTest CImpl destructor" << std::endl;
+        g_destructorOrder.push_back("CImpl");
+    }
+
+    std::shared_ptr<A> _a;
+    std::shared_ptr<B> _b;
+
+    BOOST_DESCRIBE_CLASS(CImpl, (C), (), (), ())
+};
+}  // namespace LifecycleTest
+
 #endif /* TEST_TESTBEANCLASS */

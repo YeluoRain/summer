@@ -173,3 +173,46 @@ TEST_F(BeanTest, test_construct_beans_with_no_macro) {
     EXPECT_NE(b, nullptr);
     EXPECT_NE(c, nullptr);
 }
+
+TEST_F(BeanTest, test_bean_factory_lifecycle_and_destruction_order) {
+    using namespace LifecycleTest;
+    g_destructorOrder.clear();
+    {
+        auto factory = FactoryBuilder<>().WithBeans<CImpl, BImpl, AImpl>().Build();
+        auto a = factory.GetShared<A>();
+        auto b = factory.GetShared<B>();
+        auto c = factory.GetShared<C>();
+        EXPECT_NE(a, nullptr);
+        EXPECT_NE(b, nullptr);
+        EXPECT_NE(c, nullptr);
+    }
+    ASSERT_EQ(g_destructorOrder.size(), 6);
+    EXPECT_EQ(g_destructorOrder[0], "CImpl");
+    EXPECT_EQ(g_destructorOrder[1], "C");
+    EXPECT_EQ(g_destructorOrder[2], "BImpl");
+    EXPECT_EQ(g_destructorOrder[3], "B");
+    EXPECT_EQ(g_destructorOrder[4], "AImpl");
+    EXPECT_EQ(g_destructorOrder[5], "A");
+}
+
+TEST_F(BeanTest, test_bean_factory_lifecycle_shared_ptr_released) {
+    using namespace LifecycleTest;
+    g_destructorOrder.clear();
+    {
+        auto factory = FactoryBuilder<>().WithBeans<CImpl, BImpl, AImpl>().Build();
+        auto a = factory.GetShared<A>();
+        auto b = factory.GetShared<B>();
+        auto c = factory.GetShared<C>();
+        EXPECT_NE(a, nullptr);
+        EXPECT_NE(b, nullptr);
+        EXPECT_NE(c, nullptr);
+        factory.Reset();
+    }
+    ASSERT_EQ(g_destructorOrder.size(), 6);
+    EXPECT_EQ(g_destructorOrder[0], "CImpl");
+    EXPECT_EQ(g_destructorOrder[1], "C");
+    EXPECT_EQ(g_destructorOrder[2], "BImpl");
+    EXPECT_EQ(g_destructorOrder[3], "B");
+    EXPECT_EQ(g_destructorOrder[4], "AImpl");
+    EXPECT_EQ(g_destructorOrder[5], "A");
+}
