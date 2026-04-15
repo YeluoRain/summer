@@ -48,21 +48,25 @@ struct Beans {
             dag::operation::Vertex::GetBeansInOrder(dag::operation::Vertex::ToVertexes(beans));
         auto independentBeanResolvers =
             hana::transform(independentVertexes, dag::operation::Vertex::ToBeanResovler);
-        auto beanCreatorMap = hana::make_map();
+        auto context = hana::make_tuple(hana::make_map(), hana::make_map());
         return hana::fold_left(
-            independentBeanResolvers, beanCreatorMap, [](auto&& creatorMap, auto&& beanResolver) {
+            independentBeanResolvers, context, [](auto&& context0, auto&& beanResolver) {
+                auto resolverMap = context0[hana::size_c<0>];
+                auto creatorMap = context0[hana::size_c<1>];
                 using BeanResolverType = typename decltype(hana::typeid_(beanResolver))::type;
                 using BeanType = typename BeanResolverType::BeanType;
                 auto parents = dag::operation::Vertex::GetAllParents(hana::tuple_t<BeanType>);
-                auto creator = [creatorMap] {
+                auto creator = [resolverMap, creatorMap] {
                     auto argTypes = BeanResolverType::Args;
-                    auto args = hana::transform(argTypes, [&creatorMap](auto&& bean0) {
-                        using ArgType = typename decltype(hana::typeid_(bean0))::type;
-                        using RawArgType = typename traits::ArgTypeTraits<ArgType>::type;
-                        auto creators = hana::find(creatorMap, hana::type_c<RawArgType>)
-                                            .value_or(hana::make_tuple());
-                        return constructor::BeanCreatorInvoker<ArgType>::Invoke(creators);
-                    });
+                    auto args =
+                        hana::transform(argTypes, [&resolverMap, &creatorMap](auto&& bean0) {
+                            using ArgType = typename decltype(hana::typeid_(bean0))::type;
+                            using RawArgType = typename traits::ArgTypeTraits<ArgType>::type;
+                            auto resolvers = hana::find(resolverMap, hana::type_c<RawArgType>)
+                                                 .value_or(hana::make_tuple());
+                            return constructor::BeanCreatorInvoker<ArgType>::Invoke(resolvers,
+                                                                                    creatorMap);
+                        });
                     return hana::unpack(std::move(args), [](auto&&... args0) {
                         if constexpr (traits::IsCreatorWrapper<
                                           typename BeanResolverType::Type>::value) {
@@ -73,9 +77,12 @@ struct Beans {
                         }
                     });
                 };
-                return MergeBeanMap(
-                    creatorMap, parents,
-                    constructor::BeanCreator<typename BeanResolverType::BeanType>{ creator });
+                auto pair =
+                    hana::make_pair(hana::type_c<BeanType>,
+                                    std::make_shared<constructor::BeanCreator<BeanType>>(creator));
+                auto newCreatorMap = hana::insert(creatorMap, pair);
+                return hana::make_tuple(MergeBeanMap(resolverMap, parents, hana::type_c<BeanType>),
+                                        newCreatorMap);
             });
     };
 };
