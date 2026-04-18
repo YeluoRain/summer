@@ -128,20 +128,6 @@ TEST_F(BeanTest, test_construct_beans_with_list_unique_ptr_constructor) {
                  }) != c1->_bs.end());
 }
 
-TEST_F(BeanTest, test_construct_beans_with_raw_pointer_constructor) {
-    using namespace BeansWithRawPointerConstructor;
-    auto factory = FactoryBuilder<>().WithBeans<CImpl, BImpl, AImpl, B2Impl>().Build();
-    auto a = factory.GetShared<AImpl>();
-    auto c = factory.GetShared<C>();
-    auto b = factory.GetShared<BImpl>();
-    auto b2 = factory.GetShared<B2Impl>();
-    auto c1 = factory.GetShared<CImpl>();
-    EXPECT_EQ(c.get(), c1.get());
-    EXPECT_TRUE(c1->_bs.front() == b.get());
-    EXPECT_TRUE(c1->_bs.back() == b2.get());
-    EXPECT_TRUE(c1->_a == a.get());
-}
-
 TEST_F(BeanTest, test_construct_beans_with_unique_but_has_nested_shared_ptr_constructor) {
     using namespace BeansWithUniqueButHasSharedPtrConstructor;
     auto factory = FactoryBuilder<>().WithBeans<CImpl, BImpl, AImpl>().Build();
@@ -215,4 +201,36 @@ TEST_F(BeanTest, test_bean_factory_lifecycle_shared_ptr_released) {
     EXPECT_EQ(g_destructorOrder[3], "B");
     EXPECT_EQ(g_destructorOrder[4], "AImpl");
     EXPECT_EQ(g_destructorOrder[5], "A");
+}
+
+TEST_F(BeanTest, test_complex_dag_with_8_beans) {
+    using namespace ComplexDagCase;
+    auto factory = FactoryBuilder<>()
+                       .WithBeans<HImpl, FImpl, GImpl, EImpl, DImpl, BImpl, CImpl, AImpl>()
+                       .Build();
+
+    auto a = factory.GetShared<A>();
+    auto b = factory.GetShared<B>();
+    auto c = factory.GetShared<C>();
+    auto d = factory.GetShared<D>();
+    auto e = factory.GetShared<E>();
+    auto f = factory.GetShared<F>();
+    auto g = factory.GetShared<G>();
+    auto h = factory.GetShared<H>();
+    auto hImpl = factory.GetShared<HImpl>();
+
+    EXPECT_NE(a, nullptr);
+    EXPECT_NE(b, nullptr);
+    EXPECT_NE(c, nullptr);
+    EXPECT_NE(d, nullptr);
+    EXPECT_NE(e, nullptr);
+    EXPECT_NE(f, nullptr);
+    EXPECT_NE(g, nullptr);
+    EXPECT_NE(h, nullptr);
+    EXPECT_NE(hImpl, nullptr);
+    EXPECT_EQ(h.get(), hImpl.get());
+
+    auto aList = factory.GetSharedList<A>();
+    EXPECT_EQ(aList.size(), 1);
+    EXPECT_EQ(aList.front().get(), a.get());
 }

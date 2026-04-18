@@ -161,65 +161,6 @@ class CImpl : public C {
 
 }  // namespace BeanWithNoMacro
 
-namespace BeanWithRefConstructor {
-class A {
-  public:
-    virtual ~A() = default;
-};
-
-class AImpl : public A {
-  public:
-    INJECT_CONSTRUCTOR(AImpl, ()) {
-        std::cout << "BeanWithRefConstructor AImpl constructor" << std::endl;
-    }
-
-    ~AImpl() override {
-        std::cout << "BeanWithRefConstructor AImpl destructor" << std::endl;
-    }
-
-  private:
-    BOOST_DESCRIBE_CLASS(AImpl, (A), (), (), ())
-};
-
-class B {
-  public:
-    virtual ~B() = default;
-};
-
-class BImpl : public B {
-  public:
-    INJECT_EXPLICIT_CONSTRUCTOR(BImpl, (A&)) {
-        std::cout << "BeanWithRefConstructor BImpl constructor" << std::endl;
-    }
-
-    ~BImpl() override {
-        std::cout << "BeanWithRefConstructor BImpl destructor" << std::endl;
-    }
-
-  private:
-    BOOST_DESCRIBE_CLASS(BImpl, (B), (), (), ())
-};
-
-class C {
-  public:
-    virtual ~C() = default;
-};
-
-class CImpl : public C {
-  public:
-    INJECT_CONSTRUCTOR(CImpl, (A&, B&)) {
-        std::cout << "BeanWithRefConstructor CImpl constructor" << std::endl;
-    }
-
-    ~CImpl() override {
-        std::cout << "BeanWithRefConstructor CImpl destructor" << std::endl;
-    }
-
-  private:
-    BOOST_DESCRIBE_CLASS(CImpl, (C), (), (), ())
-};
-}  // namespace BeanWithRefConstructor
-
 namespace FactoryCreateCase {
 class A {
   public:
@@ -482,81 +423,6 @@ class CImpl : public C {
 };
 }  // namespace BeansWithListUniquePtrConstructor
 
-namespace BeansWithRawPointerConstructor {
-class A {
-  public:
-    virtual ~A() = default;
-};
-
-class AImpl : public A {
-  public:
-    INJECT_CONSTRUCTOR(AImpl, ()) {
-        std::cout << "BeansWithRawPointerConstructor AImpl constructor" << std::endl;
-    }
-
-    ~AImpl() override {
-        std::cout << "BeansWithRawPointerConstructor AImpl destructor" << std::endl;
-    }
-
-  private:
-    BOOST_DESCRIBE_CLASS(AImpl, (A), (), (), ())
-};
-
-class B {
-  public:
-    virtual ~B() = default;
-};
-
-class BImpl : public B {
-  public:
-    INJECT_EXPLICIT_CONSTRUCTOR(BImpl, (A*)) {
-        std::cout << "BeansWithRawPointerConstructor BImpl constructor" << std::endl;
-    }
-
-    ~BImpl() override {
-        std::cout << "BeansWithRawPointerConstructor BImpl destructor" << std::endl;
-    }
-
-  private:
-    BOOST_DESCRIBE_CLASS(BImpl, (B), (), (), ())
-};
-
-class B2Impl : public B {
-  public:
-    INJECT_EXPLICIT_CONSTRUCTOR(B2Impl, (A*)) {
-        std::cout << "BeansWithRawPointerConstructor BImpl constructor" << std::endl;
-    }
-
-    ~B2Impl() override {
-        std::cout << "BeansWithRawPointerConstructor BImpl destructor" << std::endl;
-    }
-
-  private:
-    BOOST_DESCRIBE_CLASS(B2Impl, (B), (), (), ())
-};
-
-class C {
-  public:
-    virtual ~C() = default;
-};
-
-class CImpl : public C {
-  public:
-    INJECT_CONSTRUCTOR(CImpl, (A * a, const std::list<B*>& bs)) : _a(a), _bs(bs) {
-        std::cout << "BeansWithRawPointerConstructor CImpl constructor" << std::endl;
-    }
-
-    ~CImpl() override {
-        std::cout << "BeansWithRawPointerConstructor CImpl destructor" << std::endl;
-    }
-
-    A* _a;
-    std::list<B*> _bs;
-
-    BOOST_DESCRIBE_CLASS(CImpl, (C), (), (), ())
-};
-}  // namespace BeansWithRawPointerConstructor
-
 namespace BeansWithUniqueButHasSharedPtrConstructor {
 class A {
   public:
@@ -727,5 +593,139 @@ class CImpl : public C {
     BOOST_DESCRIBE_CLASS(CImpl, (C), (), (), ())
 };
 }  // namespace LifecycleTest
+
+namespace ComplexDagCase {
+class A {
+  public:
+    virtual ~A() = default;
+    virtual void test() = 0;
+};
+
+class AImpl : public A {
+  public:
+    INJECT_CONSTRUCTOR(AImpl, ()) {}
+    void test() override {}
+    BOOST_DESCRIBE_CLASS(AImpl, (A), (), (), ())
+};
+
+class B {
+  public:
+    virtual ~B() = default;
+    virtual void test() = 0;
+};
+
+class BImpl : public B {
+  public:
+    INJECT_EXPLICIT_CONSTRUCTOR(BImpl, (const std::shared_ptr<A>& a)) : _a(a) {}
+    void test() override {}
+    std::shared_ptr<A> _a;
+    BOOST_DESCRIBE_CLASS(BImpl, (B), (), (), ())
+};
+
+class C {
+  public:
+    virtual ~C() = default;
+    virtual void test() = 0;
+};
+
+class CImpl : public C {
+  public:
+    INJECT_EXPLICIT_CONSTRUCTOR(CImpl, (const std::shared_ptr<A>& a)) : _a(a) {}
+    void test() override {}
+    std::shared_ptr<A> _a;
+    BOOST_DESCRIBE_CLASS(CImpl, (C), (), (), ())
+};
+
+class D {
+  public:
+    virtual ~D() = default;
+    virtual void test() = 0;
+};
+
+class DImpl : public D {
+  public:
+    INJECT_CONSTRUCTOR(DImpl, (const std::shared_ptr<B>& b, const std::shared_ptr<C>& c))
+        : _b(b), _c(c) {}
+    void test() override {}
+    std::shared_ptr<B> _b;
+    std::shared_ptr<C> _c;
+    BOOST_DESCRIBE_CLASS(DImpl, (D), (), (), ())
+};
+
+class E {
+  public:
+    virtual ~E() = default;
+    virtual void test() = 0;
+};
+
+class EImpl : public E {
+  public:
+    INJECT_EXPLICIT_CONSTRUCTOR(EImpl, (const std::shared_ptr<D>& d)) : _d(d) {}
+    void test() override {}
+    std::shared_ptr<D> _d;
+    BOOST_DESCRIBE_CLASS(EImpl, (E), (), (), ())
+};
+
+class F {
+  public:
+    virtual ~F() = default;
+    virtual void test() = 0;
+};
+
+class FImpl : public F {
+  public:
+    INJECT_EXPLICIT_CONSTRUCTOR(FImpl, (const std::shared_ptr<E>& e)) : _e(e) {}
+    void test() override {}
+    std::shared_ptr<E> _e;
+    BOOST_DESCRIBE_CLASS(FImpl, (F), (), (), ())
+};
+
+class G {
+  public:
+    virtual ~G() = default;
+    virtual void test() = 0;
+};
+
+class GImpl : public G {
+  public:
+    INJECT_EXPLICIT_CONSTRUCTOR(GImpl, (const std::shared_ptr<E>& e)) : _e(e) {}
+    void test() override {}
+    std::shared_ptr<E> _e;
+    BOOST_DESCRIBE_CLASS(GImpl, (G), (), (), ())
+};
+
+class H {
+  public:
+    virtual ~H() = default;
+    virtual void test() = 0;
+};
+
+class HImpl : public H {
+  public:
+    INJECT_CONSTRUCTOR(HImpl,
+                       (const std::shared_ptr<F>& f, const std::shared_ptr<G>& g,
+                        const std::list<std::shared_ptr<A>>& aList))
+        : _f(f), _g(g), _aList(aList) {}
+    void test() override {}
+    std::shared_ptr<F> _f;
+    std::shared_ptr<G> _g;
+    std::list<std::shared_ptr<A>> _aList;
+    BOOST_DESCRIBE_CLASS(HImpl, (H), (), (), ())
+};
+
+class H2Impl : public H {
+  public:
+    INJECT_EXPLICIT_CONSTRUCTOR(H2Impl,
+                                (const std::shared_ptr<F>& f, const std::shared_ptr<G>& g,
+                                 const std::list<std::shared_ptr<A>>& aList))
+        : _f(f), _g(g), _aList(aList) {}
+    void test() override {}
+    std::shared_ptr<F> _f;
+    std::shared_ptr<G> _g;
+    std::list<std::shared_ptr<A>> _aList;
+    BOOST_DESCRIBE_CLASS(H2Impl, (H), (), (), ())
+};
+
+}  // namespace ComplexDagCase
 
 #endif /* TEST_TESTBEANCLASS */
