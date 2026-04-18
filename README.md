@@ -170,6 +170,111 @@ TEST_F(BeanTest, test_construct_beans_with_creator_function) {
 
 依旧可以相当简化地进行依赖注入过程。
 
+#### 复杂DAG依赖案例
+
+以下是一个包含8个类的复杂有向无环图（DAG）依赖关系案例：
+
+```mermaid
+graph TD;
+    A --> B;
+    A --> C;
+    B --> D;
+    C --> D;
+    D --> E;
+    E --> F;
+    E --> G;
+    F --> H;
+    G --> H;
+```
+
+依赖关系：
+- A：无依赖
+- B：依赖A
+- C：依赖A
+- D：依赖B和C
+- E：依赖D
+- F：依赖E
+- G：依赖E
+- H：依赖F和G
+
+```c++
+class A { public: virtual ~A() = default; };
+class AImpl : public A {
+  public:
+    INJECT_CONSTRUCTOR(AImpl, ()) {}
+    BOOST_DESCRIBE_CLASS(AImpl, (A), (), (), ())
+};
+
+class B { public: virtual ~B() = default; };
+class BImpl : public B {
+  public:
+    INJECT_EXPLICIT_CONSTRUCTOR(BImpl, (const std::shared_ptr<A>& a)) : _a(a) {}
+    std::shared_ptr<A> _a;
+    BOOST_DESCRIBE_CLASS(BImpl, (B), (), (), ())
+};
+
+class C { public: virtual ~C() = default; };
+class CImpl : public C {
+  public:
+    INJECT_EXPLICIT_CONSTRUCTOR(CImpl, (const std::shared_ptr<A>& a)) : _a(a) {}
+    std::shared_ptr<A> _a;
+    BOOST_DESCRIBE_CLASS(CImpl, (C), (), (), ())
+};
+
+class D { public: virtual ~D() = default; };
+class DImpl : public D {
+  public:
+    INJECT_CONSTRUCTOR(DImpl, (const std::shared_ptr<B>& b, const std::shared_ptr<C>& c))
+        : _b(b), _c(c) {}
+    std::shared_ptr<B> _b;
+    std::shared_ptr<C> _c;
+    BOOST_DESCRIBE_CLASS(DImpl, (D), (), (), ())
+};
+
+class E { public: virtual ~E() = default; };
+class EImpl : public E {
+  public:
+    INJECT_EXPLICIT_CONSTRUCTOR(EImpl, (const std::shared_ptr<D>& d)) : _d(d) {}
+    std::shared_ptr<D> _d;
+    BOOST_DESCRIBE_CLASS(EImpl, (E), (), (), ())
+};
+
+class F { public: virtual ~F() = default; };
+class FImpl : public F {
+  public:
+    INJECT_EXPLICIT_CONSTRUCTOR(FImpl, (const std::shared_ptr<E>& e)) : _e(e) {}
+    std::shared_ptr<E> _e;
+    BOOST_DESCRIBE_CLASS(FImpl, (F), (), (), ())
+};
+
+class G { public: virtual ~G() = default; };
+class GImpl : public G {
+  public:
+    INJECT_EXPLICIT_CONSTRUCTOR(GImpl, (const std::shared_ptr<E>& e)) : _e(e) {}
+    std::shared_ptr<E> _e;
+    BOOST_DESCRIBE_CLASS(GImpl, (G), (), (), ())
+};
+
+class H { public: virtual ~H() = default; };
+class HImpl : public H {
+  public:
+    INJECT_CONSTRUCTOR(HImpl,
+                       (const std::shared_ptr<F>& f, const std::shared_ptr<G>& g,
+                        const std::list<std::shared_ptr<A>>& aList))
+        : _f(f), _g(g), _aList(aList) {}
+    std::shared_ptr<F> _f;
+    std::shared_ptr<G> _g;
+    std::list<std::shared_ptr<A>> _aList;
+    BOOST_DESCRIBE_CLASS(HImpl, (H), (), (), ())
+};
+
+// 使用工厂构建复杂DAG
+auto factory = FactoryBuilder<>()
+                   .WithBeans<HImpl, FImpl, GImpl, EImpl, DImpl, BImpl, CImpl, AImpl>()
+                   .Build();
+auto h = factory.GetShared<H>();
+```
+
 #### 构造函数入参问题
 
 与Java不同的是，C++拥有多种指针类型或者引用，来进行对象的传递。这块的特性是C++所独有的。Summer所支持的入参类型比较丰富：
