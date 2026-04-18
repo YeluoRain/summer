@@ -202,3 +202,35 @@ TEST_F(BeanTest, test_bean_factory_lifecycle_shared_ptr_released) {
     EXPECT_EQ(g_destructorOrder[4], "AImpl");
     EXPECT_EQ(g_destructorOrder[5], "A");
 }
+
+TEST_F(BeanTest, test_complex_dag_with_8_beans) {
+    using namespace ComplexDagCase;
+    auto factory = FactoryBuilder<>()
+                       .WithBeans<HImpl, FImpl, GImpl, EImpl, DImpl, BImpl, CImpl, AImpl>()
+                       .Build();
+
+    auto a = factory.GetShared<A>();
+    auto b = factory.GetShared<B>();
+    auto c = factory.GetShared<C>();
+    auto d = factory.GetShared<D>();
+    auto e = factory.GetShared<E>();
+    auto f = factory.GetShared<F>();
+    auto g = factory.GetShared<G>();
+    auto h = factory.GetShared<H>();
+    auto hImpl = factory.GetShared<HImpl>();
+
+    EXPECT_NE(a, nullptr);
+    EXPECT_NE(b, nullptr);
+    EXPECT_NE(c, nullptr);
+    EXPECT_NE(d, nullptr);
+    EXPECT_NE(e, nullptr);
+    EXPECT_NE(f, nullptr);
+    EXPECT_NE(g, nullptr);
+    EXPECT_NE(h, nullptr);
+    EXPECT_NE(hImpl, nullptr);
+    EXPECT_EQ(h.get(), hImpl.get());
+
+    auto aList = factory.GetSharedList<A>();
+    EXPECT_EQ(aList.size(), 1);
+    EXPECT_EQ(aList.front().get(), a.get());
+}
