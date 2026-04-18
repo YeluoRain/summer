@@ -1,48 +1,49 @@
+**中文** | [English](./README.md)
+
 # Summer
 
-### 什么是Summer？
+### What is Summer?
 
-C++作为一门多范式的编程语言，为各类“魔法”编程奠定了雄厚的语法糖基础。而与之相反，开源社区的发展较其他编程语言，如Java/Python/Go等等，显得较为老迈横秋。以Java的顶级开源框架Springboot为例，以依赖注入为基础，衍生的各类层出不穷的Springboot开源生态，正在蓬勃发展。
+C++ is a multi-paradigm programming language that provides a solid foundation for various "magic" programming techniques. However, unlike other programming languages such as Java, Python, and Go, the C++ open-source community has been relatively slow in developing ecosystem around dependency injection frameworks. Take Java's Spring Boot as an example: based on dependency injection, it has spawned a thriving ecosystem of Spring Boot projects.
 
-而C++由于语言特性导致的头文件传染和封装相关的问题，依赖注入显得更有必要。我们知道，Springboot所实现的依赖注入是以Java反射为基础，而C++对反射的支持如同隔靴搔痒，直到C++26中才形成正式提案。而C++26对于当今的开发者而言，由于各类历史债务问题，显得格外“遥远”。
+Due to C++ language characteristics like header file contagion and encapsulation issues, dependency injection becomes even more necessary. As we know, Spring Boot's dependency injection is based on Java reflection. C++ has very limited reflection support - it wasn't until C++26 that a formal proposal for reflection was formed. For developers today, dealing with historical baggage makes C++26 seem "far away."
 
-因此Summer尝试基于Boost.describe和Boost.hana两大组件，试图在C++17的标准背景下，实现C++的静态反射，并以Boost.hana异构 编程范式和一些模板“黑魔法”，构建编译期的有向无环图DAG，达到类似Springboot的依赖注入效果。
+Therefore, Summer attempts to implement static reflection in C++17 by leveraging Boost.Describe and Boost.Hana. Using Boost.Hana's heterogeneous programming paradigm and some template "black magic," Summer constructs a compile-time Directed Acyclic Graph (DAG) to achieve dependency injection similar to Spring Boot.
 
+### Quick Start
 
+#### Installation
 
-### 快速入门
+Summer is a header-only library with only Boost as a dependency. Simply copy the summer directory to your project.
 
-#### 如何安装
+#### Quick Example
 
-Summer是一个纯头文件的库，依赖只有Boost，所以请直接把summer目录拷贝到你需要的地方吧。
-
-#### 快速上手
-
-正如我们上面所提到，C++17是通过Boost.describe实现的静态反射，因此我们不得不对待注入的类进行必要的宏处理，我们假定如下简单的案例：
+As mentioned above, C++17 achieves static reflection through Boost.Describe, so we must apply necessary macros to classes we want to inject. Consider the following simple example:
 
 ```c++
-// 纯虚类，起到接口的作用
+// Abstract class acting as an interface
 class A {
 public:
   virtual ~A() = default;
   virtual void testA() = 0;
 };
-// A接口的实现类
+
+// Implementation of A
 class AImpl : public A {
 public:
-  // INJECT_CONSTRUCTOR为构造函数的宏处理，类似Springboot的@Autowired注解
+  // INJECT_CONSTRUCTOR macro handles constructor injection, similar to Spring's @Autowired
   INJECT_CONSTRUCTOR(AImpl, ()) {
     std::cout << "NormalCase AImpl constructor" << std::endl;
   }
   void testA() override { std::cout << "print a test" << std::endl; }
 
   ~AImpl() override { std::cout << "NormalCase AImpl destructor" << std::endl; }
-  //Boost.describe所提供的编译期获得类的继承关系的能力
+  // BOOST_DESCRIBE_CLASS provides compile-time inheritance information
   BOOST_DESCRIBE_CLASS(AImpl, (A), (), (), ())
 };
 ```
 
-经过如上的`INJECT_CONSTRUCTOR`和`BOOST_DESCRIBE_CLASS`，其实我们已经能够在编译期判断一个类，依赖了什么接口，实现了什么接口，这转化到有向无环图，实际上就是一个点的`Indegree`和`Outdegree`，依此为思路，我们继续定义如下的类：
+With `INJECT_CONSTRUCTOR` and `BOOST_DESCRIBE_CLASS`, we can determine at compile time what interfaces a class implements and what dependencies it requires. In terms of a DAG, this translates to `Indegree` and `Outdegree` of each vertex. Based on this, let's continue defining more classes:
 
 ```c++
 
@@ -51,10 +52,10 @@ public:
   virtual ~B() = default;
   virtual void testB() = 0;
 };
-// BImpl依赖了A，实现了B
+// BImpl depends on A and implements B
 class BImpl : public B {
 public:
-  // INJECT_EXPLICIT_CONSTRUCTOR 在 INJECT_CONSTRUCTOR基础之上增加了explicit关键字
+  // INJECT_EXPLICIT_CONSTRUCTOR adds explicit keyword on top of INJECT_CONSTRUCTOR
   INJECT_EXPLICIT_CONSTRUCTOR(BImpl, (const std::shared_ptr<A> &a)) : a(a) {
     std::cout << "NormalCase BImpl constructor" << std::endl;
   }
@@ -73,7 +74,7 @@ public:
   virtual ~C() = default;
   virtual void testC() = 0;
 };
-// CImpl依赖了A和B，实现了C
+// CImpl depends on A and B, implements C
 class CImpl : public C {
 public:
   INJECT_CONSTRUCTOR(CImpl,
@@ -94,7 +95,7 @@ private:
 };
 ```
 
-很显然，ABC三个类是如下的依赖关系：
+The dependency relationship between A, B, and C is:
 
 ```mermaid
 graph LR;
@@ -103,7 +104,7 @@ graph LR;
 		B-->A
 ```
 
-这是一个非常简单的有向无环图。接下来，我们可以将它们放入BeanFactory中：
+This is a very simple DAG. Next, let's put them into a BeanFactory:
 
 ```c++
 #include "Summer.h"
@@ -112,48 +113,48 @@ using namespace boost;
 using namespace summer;
 
 TEST_F(BeanTest, test_construct_beans_by_bean_factory) {
-  // 将拥有正确依赖关系的三个类放入BeanFactory模板参数中
-  // C++难以支持类似Java的Scan Package的能力，这种方案是一种妥协
+  // Put the three classes with correct dependency relationships into BeanFactory template
+  // C++ lacks the ability to scan packages like Java, so this approach is a compromise
   auto factory = FactoryBuilder<>().WithBeans<CImpl, BImpl, AImpl>().Build();
-  // 通过Factory的方法，我们可以在业务最上层取出相应的接口类
-  // GetShared取出的是std::share_ptr类型的对象指针
+  // Through Factory methods, we can retrieve interface classes at the business layer
+  // GetShared returns std::shared_ptr
   auto a = factory.GetShared<A>();
   auto b = factory.GetShared<B>();
   auto c = factory.GetShared<C>();
-  // 如果你比较无聊，你甚至也可以取出实现类
+  // You can also retrieve implementation classes if needed
   auto a1 = factory.GetShared<AImpl>();
   auto b1 = factory.GetShared<BImpl>();
   auto c1 = factory.GetShared<CImpl>();
-  // 但两种方式返回的同一个内存地址
+  // Both methods return the same memory address
   EXPECT_EQ(a.get(), a1.get());
   EXPECT_EQ(b.get(), b1.get());
   EXPECT_EQ(c.get(), c1.get());
 }
 ```
 
-至此，我们成功对三个拥有合理依赖关系的类，进行了自动依赖注入。
+Now we have successfully performed automatic dependency injection for three classes with correct dependency relationships.
 
-#### 工厂方法注入
+#### Factory Method Injection
 
-当然，我们在实际开发过程中，待注入的类不一定有具体的构造方法，取而代之是工厂方法+基类的使用场景，这个时候我们要通过工厂方法注入。
+In real development, classes to be injected may not have concrete constructors. Instead, we might have factory methods combined with base classes. In this case, we use factory method injection.
 
-假定继承上述的案例，我们定义一个`CImpl`类的工厂方法：
+Building on the above example, let's define a factory method for `CImpl`:
 
 ```c++
-// 没错，工厂方法也可以类似于构造函数注入的方式，从IoC容器中获取到其他的实体类
+// Factory methods can also inject dependencies from the IoC container
 inline CImpl* createCImpl(std::shared_ptr<A> a, std::shared_ptr<B> b) {
     return new CImpl(a, b);
 }
 ```
 
-此场景下，我们的注入方式为：
+In this scenario, the injection is done as follows:
 
 ```c++
 TEST_F(BeanTest, test_construct_beans_with_creator_function) {
     auto factory = FactoryBuilder<>()
-                         // 这里不再注入CImpl
+                         // No longer inject CImpl directly
                          .WithBeans<BImpl, AImpl>()
-                         // 取而代之，我们注入相应的工厂方法
+                         // Instead, inject the factory method
                          .WithCreators<createCImpl>()
                          .Build();
     auto a = factory.GetShared<A>();
@@ -168,126 +169,21 @@ TEST_F(BeanTest, test_construct_beans_with_creator_function) {
 }
 ```
 
-依旧可以相当简化地进行依赖注入过程。
+Dependency injection is still very straightforward.
 
-#### 复杂DAG依赖案例
+#### Constructor Parameter Types
 
-以下是一个包含8个类的复杂有向无环图（DAG）依赖关系案例：
+Unlike Java, C++ has multiple pointer types and references for object passing. This is unique to C++. Summer supports various parameter types:
 
-```mermaid
-graph TD;
-    A --> B;
-    A --> C;
-    B --> D;
-    C --> D;
-    D --> E;
-    E --> F;
-    E --> G;
-    F --> H;
-    G --> H;
-```
+* Smart pointer (`std::shared_ptr`)
+* Smart pointer (`std::unique_ptr`)
+* `std::list` and `std::vector` nested with the above pointer types
 
-依赖关系：
-- A：无依赖
-- B：依赖A
-- C：依赖A
-- D：依赖B和C
-- E：依赖D
-- F：依赖E
-- G：依赖E
-- H：依赖F和G
+Note that, similar to Spring Boot's default behavior, all parameter types except `std::unique_ptr` share the same instance. However, with `std::unique_ptr`, due to its unique ownership characteristic, a new instance is created each time the constructor is called, similar to Spring Boot's prototype scope.
 
-```c++
-class A { public: virtual ~A() = default; };
-class AImpl : public A {
-  public:
-    INJECT_CONSTRUCTOR(AImpl, ()) {}
-    BOOST_DESCRIBE_CLASS(AImpl, (A), (), (), ())
-};
+## Implementation Principles
 
-class B { public: virtual ~B() = default; };
-class BImpl : public B {
-  public:
-    INJECT_EXPLICIT_CONSTRUCTOR(BImpl, (const std::shared_ptr<A>& a)) : _a(a) {}
-    std::shared_ptr<A> _a;
-    BOOST_DESCRIBE_CLASS(BImpl, (B), (), (), ())
-};
-
-class C { public: virtual ~C() = default; };
-class CImpl : public C {
-  public:
-    INJECT_EXPLICIT_CONSTRUCTOR(CImpl, (const std::shared_ptr<A>& a)) : _a(a) {}
-    std::shared_ptr<A> _a;
-    BOOST_DESCRIBE_CLASS(CImpl, (C), (), (), ())
-};
-
-class D { public: virtual ~D() = default; };
-class DImpl : public D {
-  public:
-    INJECT_CONSTRUCTOR(DImpl, (const std::shared_ptr<B>& b, const std::shared_ptr<C>& c))
-        : _b(b), _c(c) {}
-    std::shared_ptr<B> _b;
-    std::shared_ptr<C> _c;
-    BOOST_DESCRIBE_CLASS(DImpl, (D), (), (), ())
-};
-
-class E { public: virtual ~E() = default; };
-class EImpl : public E {
-  public:
-    INJECT_EXPLICIT_CONSTRUCTOR(EImpl, (const std::shared_ptr<D>& d)) : _d(d) {}
-    std::shared_ptr<D> _d;
-    BOOST_DESCRIBE_CLASS(EImpl, (E), (), (), ())
-};
-
-class F { public: virtual ~F() = default; };
-class FImpl : public F {
-  public:
-    INJECT_EXPLICIT_CONSTRUCTOR(FImpl, (const std::shared_ptr<E>& e)) : _e(e) {}
-    std::shared_ptr<E> _e;
-    BOOST_DESCRIBE_CLASS(FImpl, (F), (), (), ())
-};
-
-class G { public: virtual ~G() = default; };
-class GImpl : public G {
-  public:
-    INJECT_EXPLICIT_CONSTRUCTOR(GImpl, (const std::shared_ptr<E>& e)) : _e(e) {}
-    std::shared_ptr<E> _e;
-    BOOST_DESCRIBE_CLASS(GImpl, (G), (), (), ())
-};
-
-class H { public: virtual ~H() = default; };
-class HImpl : public H {
-  public:
-    INJECT_CONSTRUCTOR(HImpl,
-                       (const std::shared_ptr<F>& f, const std::shared_ptr<G>& g,
-                        const std::list<std::shared_ptr<A>>& aList))
-        : _f(f), _g(g), _aList(aList) {}
-    std::shared_ptr<F> _f;
-    std::shared_ptr<G> _g;
-    std::list<std::shared_ptr<A>> _aList;
-    BOOST_DESCRIBE_CLASS(HImpl, (H), (), (), ())
-};
-
-// 使用工厂构建复杂DAG
-auto factory = FactoryBuilder<>()
-                   .WithBeans<HImpl, FImpl, GImpl, EImpl, DImpl, BImpl, CImpl, AImpl>()
-                   .Build();
-auto h = factory.GetShared<H>();
-```
-
-#### 构造函数入参问题
-
-与Java不同的是，C++拥有多种指针类型或者引用，来进行对象的传递。这块的特性是C++所独有的。Summer所支持的入参类型比较丰富：
-
-* 智能指针（std::shared_ptr）
-* 智能指针（std::unique_ptr）
-* std::list和std::vector与上述指针类型嵌套的类型
-
-值的注意的是，与Springboot的默认设置类似，除std::unique_ptr以外的入参类型，都是共享的一个实例。但在std::unique_ptr入参类型情况下，由于唯一所有权的特殊性，将在每次调用构造函数时生存新的实例，与Springboot的prototype装载模式类型。
-
-## 实现原理
-
-### 核心类图
+### Core Class Diagram
 
 ```mermaid
 classDiagram
@@ -344,32 +240,32 @@ classDiagram
     ArgTypeTraits <-- BeanCreatorInvoker : uses for type unwrapping
 ```
 
-### 设计思路
+### Design Philosophy
 
-#### 1. 静态反射与类型注册
+#### 1. Static Reflection and Type Registration
 
-Summer利用Boost.Describe在编译期提取类的继承关系，结合宏`INJECT_CONSTRUCTOR`和`INJECT_EXPLICIT_CONSTRUCTOR`将构造函数的签名注册到类型系统。
+Summer uses Boost.Describe to extract class inheritance relationships at compile time. Combined with `INJECT_CONSTRUCTOR` and `INJECT_EXPLICIT_CONSTRUCTOR` macros, constructor signatures are registered into the type system.
 
-关键类型`BeanResolver<T>`通过模板特化机制：
-- 对于使用宏定义的类：从`FactortMethodType`提取`ImplementOf`（实现的所有接口）和`DependOn`（构造函数参数类型）
-- 对于工厂方法：从`CreatorWrapper<CreatorFunc>`提取相关信息
-- 对于无宏的简单类：提供默认实现
+The key type `BeanResolver<T>` uses template specialization:
+- For classes using macros: extracts `ImplementOf` (all implemented interfaces) and `DependOn` (constructor parameter types) from `FactortMethodType`
+- For factory methods: extracts information from `CreatorWrapper<CreatorFunc>`
+- For simple classes without macros: provides default implementation
 
-#### 2. 有向无环图（DAG）构建
+#### 2. Directed Acyclic Graph (DAG) Construction
 
-每个Bean被建模为DAG中的一个顶点：
-- **OutList (出度)**：该Bean依赖的其他Bean类型
-- **InList (入度)**：实现该Bean的所有类型（包括自身）
+Each Bean is modeled as a vertex in the DAG:
+- **OutList (OutDegree)**: Other Bean types this Bean depends on
+- **InList (InDegree)**: All types that implement this Bean (including itself)
 
-通过`Vertex::GetBeansInOrder`，框架在编译期执行拓扑排序：
-1. 找出所有无依赖的顶点（出度为0）
-2. 移除这些顶点，更新剩余顶点的依赖关系
-3. 重复直到所有顶点被处理
-4. 若剩余顶点仍有依赖，则报告循环依赖错误
+Through `Vertex::GetBeansInOrder`, the framework performs topological sorting at compile time:
+1. Find all vertices with no dependencies (out-degree = 0)
+2. Remove these vertices and update dependency relationships of remaining vertices
+3. Repeat until all vertices are processed
+4. If remaining vertices still have dependencies, report circular dependency error
 
-#### 3. 共享实例与独享实例
+#### 3. Shared vs Unique Instances
 
-**共享实例（Singleton模式）**：
+**Shared Instance (Singleton pattern)**:
 ```cpp
 // Constructor.h
 template <typename BeanType>
@@ -385,7 +281,7 @@ public:
 };
 ```
 
-**独享实例（Prototype模式）**：
+**Unique Instance (Prototype pattern)**:
 ```cpp
 template <typename BeanType>
 class BeanCreator {
@@ -396,123 +292,123 @@ public:
 };
 ```
 
-#### 4. 参数类型解包
+#### 4. Parameter Type Unwrapping
 
-`ArgTypeTraits`模板将各种参数类型"解包"为原始Bean类型：
+The `ArgTypeTraits` template "unwraps" various parameter types to raw Bean types:
 
-| 原始类型 | 解包后 |
-|---------|--------|
+| Original Type | Unwrapped |
+|---------------|-----------|
 | `const std::shared_ptr<A>&` | `A` |
 | `std::unique_ptr<A>` | `A` |
 | `const std::list<std::shared_ptr<A>>&` | `A` |
 | `std::vector<std::unique_ptr<A>>` | `A` |
 
-这使得框架能够统一处理不同包装类型的参数。
+This allows the framework to uniformly handle parameters with different wrapper types.
 
-#### 5. BeanCreatorInvoker分发
+#### 5. BeanCreatorInvoker Dispatch
 
-`BeanCreatorInvoker<ArgType>`根据参数类型分发到不同的实例获取策略：
+`BeanCreatorInvoker<ArgType>` dispatches to different instance acquisition strategies based on parameter type:
 
 ```cpp
-// shared_ptr类型 - 返回共享实例
+// shared_ptr type - returns shared instance
 template <typename ArgType>
 struct BeanCreatorInvoker<std::shared_ptr<ArgType>> {
     static constexpr std::shared_ptr<ArgType> Invoke(...) {
-        return creator->GetShared();  // 复用单例
+        return creator->GetShared();  // Reuse singleton
     }
 };
 
-// unique_ptr类型 - 返回新实例
+// unique_ptr type - returns new instance
 template <typename ArgType>
 struct BeanCreatorInvoker<std::unique_ptr<ArgType>> {
     static constexpr std::unique_ptr<ArgType> Invoke(...) {
-        return creator->GetUnique();  // 创建新实例
+        return creator->GetUnique();  // Create new instance
     }
 };
 
-// list类型 - 批量获取
+// list type - batch acquisition
 template <typename ArgType>
 struct BeanCreatorInvoker<std::list<ArgType>> {
     static constexpr std::list<ArgType> Invoke(...) {
-        // 对每个resolver调用Invoke，返回列表
+        // Call Invoke for each resolver, return list
     }
 };
 ```
 
-### Bean创建流程
+### Bean Creation Flow
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                     编译期构建阶段                                │
+│                     Compile-Time Build Phase                     │
 ├─────────────────────────────────────────────────────────────────┤
 │ 1. FactoryBuilder::Build()                                       │
-│    └─> Beans::CreateFactory(beans)                               │
+│    └─> Beans::CreateFactory(beans)                             │
 │         │                                                        │
-│         ├─> Vertex::ToVertexes(beans)                           │
-│         │   将所有Bean转换为DAG顶点                              │
+│         ├─> Vertex::ToVertexes(beans)                          │
+│         │   Convert all Beans to DAG vertices                    │
 │         │                                                        │
-│         ├─> Vertex::GetBeansInOrder()                            │
-│         │   编译期拓扑排序                                       │
-│         │   ├─> 找出无依赖的顶点（出度=0）                       │
-│         │   ├─> 移除并更新依赖关系                               │
-│         │   └─> 重复直到所有顶点处理完毕                         │
+│         ├─> Vertex::GetBeansInOrder()                           │
+│         │   Compile-time topological sort                       │
+│         │   ├─> Find vertices with no dependencies (out=0)     │
+│         │   ├─> Remove and update dependency relationships     │
+│         │   └─> Repeat until all vertices processed             │
 │         │                                                        │
-│         └─> 构建 resolverMap 和 creatorMap                       │
+│         └─> Build resolverMap and creatorMap                    │
 │             resolverMap: BeanType -> resolvers tuple              │
-│             creatorMap: resolver -> BeanCreator pointer           │
+│             creatorMap: resolver -> BeanCreator pointer          │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                     运行时获取阶段                               │
+│                     Runtime Acquisition Phase                     │
 ├─────────────────────────────────────────────────────────────────┤
 │ 2. BeanFactory::GetShared<A>()                                   │
 │    │                                                             │
-│    ├─> FindResolvers<A>()                                       │
-│    │   在resolverMap中查找A的resolvers                           │
+│    ├─> FindResolvers<A>()                                      │
+│    │   Look up A's resolvers in resolverMap                      │
 │    │                                                             │
 │    └─> FindCreator(resolver) -> creator                         │
 │        │                                                         │
 │        └─> creator->GetShared()                                 │
 │            │                                                     │
-│            ├─> 如果m_sharedInstance存在，直接返回               │
+│            ├─> If m_sharedInstance exists, return directly       │
 │            │                                                     │
-│            └─> 否则调用lambda创建实例：                          │
+│            └─> Otherwise call lambda to create instance:        │
 │                │                                                 │
-│                ├─> 获取构造函数参数                               │
+│                ├─> Get constructor parameters                     │
 │                │   BeanCreatorInvoker<ArgType>::Invoke(...)      │
-│                │   ├─> ArgTypeTraits解包获取原始类型             │
-│                │   ├─> 在resolverMap中查找依赖的resolver        │
-│                │   └─> 递归调用creator->GetShared/GetUnique     │
+│                │   ├─> ArgTypeTraits unwrap to get raw type      │
+│                │   ├─> Look up dependent resolver in resolverMap │
+│                │   └─> Recursively call creator->GetShared/Unique│
 │                │                                                 │
-│                └─> 调用new或工厂方法创建Bean                      │
+│                └─> Call new or factory method to create Bean    │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### 完整示例解析
+### Complete Example Analysis
 
-以`FactoryBuilder<>().WithBeans<CImpl, BImpl, AImpl>().Build()`为例：
+Taking `FactoryBuilder<>().WithBeans<CImpl, BImpl, AImpl>().Build()` as an example:
 
-**编译期**：
-1. 定义三个BeanResolver：AImpl、BImpl、CImpl
-2. 构建DAG：
-   - AImpl：无依赖（出度0）
-   - BImpl：依赖A（出度1）
-   - CImpl：依赖A和B（出度2）
-3. 拓扑排序结果顺序：AImpl -> BImpl -> CImpl
-4. 创建creatorMap：
-   - AImpl的creator：无参数，直接new AImpl()
-   - BImpl的creator：需要一个A，通过resolverMap找到AImpl的creator，调用GetShared()
-   - CImpl的creator：需要A和B，同上
+**Compile-time**:
+1. Define three BeanResolvers: AImpl, BImpl, CImpl
+2. Build DAG:
+   - AImpl: no dependencies (out-degree 0)
+   - BImpl: depends on A (out-degree 1)
+   - CImpl: depends on A and B (out-degree 2)
+3. Topological sort result order: AImpl -> BImpl -> CImpl
+4. Create creatorMap:
+   - AImpl's creator: no parameters, directly new AImpl()
+   - BImpl's creator: needs A, finds AImpl's creator via resolverMap, calls GetShared()
+   - CImpl's creator: needs A and B, same as above
 
-**运行时获取C**：
-1. `GetShared<C>()` 查找C的resolver -> CImpl
-2. 调用CImpl的creator：
-   - 参数A：通过ArgTypeTraits解包为A，查resolverMap得AImpl的creator，调用GetShared()
-   - 参数B：通过ArgTypeTraits解包为B，查resolverMap得BImpl的creator，调用GetShared()
-   - 创建CImpl实例
-3. 返回C的shared_ptr
+**Runtime to get C**:
+1. `GetShared<C>()` finds C's resolver -> CImpl
+2. Call CImpl's creator:
+   - Parameter A: unwrap via ArgTypeTraits to A, find AImpl's creator via resolverMap, call GetShared()
+   - Parameter B: unwrap via ArgTypeTraits to B, find BImpl's creator via resolverMap, call GetShared()
+   - Create CImpl instance
+3. Return C's shared_ptr
 
-### 请注意
+### Note
 
-当前正处于较为早期的施工阶段，欢迎提issue～
+This project is in early stages. Issues and PRs are welcome!
