@@ -161,7 +161,7 @@ class CImpl : public C {
 
 }  // namespace BeanWithNoMacro
 
-namespace BeanWithRefConstructor {
+namespace BeansWithUniqueButHasSharedPtrConstructor {
 class A {
   public:
     virtual ~A() = default;
@@ -170,11 +170,11 @@ class A {
 class AImpl : public A {
   public:
     INJECT_CONSTRUCTOR(AImpl, ()) {
-        std::cout << "BeanWithRefConstructor AImpl constructor" << std::endl;
+        std::cout << "BeansWithUniqueButHasSharedPtrConstructor AImpl constructor" << std::endl;
     }
 
     ~AImpl() override {
-        std::cout << "BeanWithRefConstructor AImpl destructor" << std::endl;
+        std::cout << "BeansWithUniqueButHasSharedPtrConstructor AImpl destructor" << std::endl;
     }
 
   private:
@@ -188,15 +188,16 @@ class B {
 
 class BImpl : public B {
   public:
-    INJECT_EXPLICIT_CONSTRUCTOR(BImpl, (A&)) {
-        std::cout << "BeanWithRefConstructor BImpl constructor" << std::endl;
+    INJECT_EXPLICIT_CONSTRUCTOR(BImpl, (const std::shared_ptr<A> a)) : _a(a) {
+        std::cout << "BeansWithUniqueButHasSharedPtrConstructor BImpl constructor" << std::endl;
     }
 
     ~BImpl() override {
-        std::cout << "BeanWithRefConstructor BImpl destructor" << std::endl;
+        std::cout << "BeansWithUniqueButHasSharedPtrConstructor BImpl destructor" << std::endl;
     }
 
   private:
+    std::shared_ptr<A> _a;
     BOOST_DESCRIBE_CLASS(BImpl, (B), (), (), ())
 };
 
@@ -207,18 +208,21 @@ class C {
 
 class CImpl : public C {
   public:
-    INJECT_CONSTRUCTOR(CImpl, (A&, B&)) {
-        std::cout << "BeanWithRefConstructor CImpl constructor" << std::endl;
+    INJECT_CONSTRUCTOR(CImpl, (const std::shared_ptr<A> a, std::unique_ptr<B> b))
+        : _a(a), _b(std::move(b)) {
+        std::cout << "BeansWithUniqueButHasSharedPtrConstructor CImpl constructor" << std::endl;
     }
 
     ~CImpl() override {
-        std::cout << "BeanWithRefConstructor CImpl destructor" << std::endl;
+        std::cout << "BeansWithUniqueButHasSharedPtrConstructor CImpl destructor" << std::endl;
     }
 
-  private:
+    std::shared_ptr<A> _a;
+    std::unique_ptr<B> _b;
+
     BOOST_DESCRIBE_CLASS(CImpl, (C), (), (), ())
 };
-}  // namespace BeanWithRefConstructor
+}  // namespace BeansWithUniqueButHasSharedPtrConstructor
 
 namespace FactoryCreateCase {
 class A {
@@ -481,144 +485,6 @@ class CImpl : public C {
     BOOST_DESCRIBE_CLASS(CImpl, (C), (), (), ())
 };
 }  // namespace BeansWithListUniquePtrConstructor
-
-namespace BeansWithRawPointerConstructor {
-class A {
-  public:
-    virtual ~A() = default;
-};
-
-class AImpl : public A {
-  public:
-    INJECT_CONSTRUCTOR(AImpl, ()) {
-        std::cout << "BeansWithRawPointerConstructor AImpl constructor" << std::endl;
-    }
-
-    ~AImpl() override {
-        std::cout << "BeansWithRawPointerConstructor AImpl destructor" << std::endl;
-    }
-
-  private:
-    BOOST_DESCRIBE_CLASS(AImpl, (A), (), (), ())
-};
-
-class B {
-  public:
-    virtual ~B() = default;
-};
-
-class BImpl : public B {
-  public:
-    INJECT_EXPLICIT_CONSTRUCTOR(BImpl, (A*)) {
-        std::cout << "BeansWithRawPointerConstructor BImpl constructor" << std::endl;
-    }
-
-    ~BImpl() override {
-        std::cout << "BeansWithRawPointerConstructor BImpl destructor" << std::endl;
-    }
-
-  private:
-    BOOST_DESCRIBE_CLASS(BImpl, (B), (), (), ())
-};
-
-class B2Impl : public B {
-  public:
-    INJECT_EXPLICIT_CONSTRUCTOR(B2Impl, (A*)) {
-        std::cout << "BeansWithRawPointerConstructor BImpl constructor" << std::endl;
-    }
-
-    ~B2Impl() override {
-        std::cout << "BeansWithRawPointerConstructor BImpl destructor" << std::endl;
-    }
-
-  private:
-    BOOST_DESCRIBE_CLASS(B2Impl, (B), (), (), ())
-};
-
-class C {
-  public:
-    virtual ~C() = default;
-};
-
-class CImpl : public C {
-  public:
-    INJECT_CONSTRUCTOR(CImpl, (A * a, const std::list<B*>& bs)) : _a(a), _bs(bs) {
-        std::cout << "BeansWithRawPointerConstructor CImpl constructor" << std::endl;
-    }
-
-    ~CImpl() override {
-        std::cout << "BeansWithRawPointerConstructor CImpl destructor" << std::endl;
-    }
-
-    A* _a;
-    std::list<B*> _bs;
-
-    BOOST_DESCRIBE_CLASS(CImpl, (C), (), (), ())
-};
-}  // namespace BeansWithRawPointerConstructor
-
-namespace BeansWithUniqueButHasSharedPtrConstructor {
-class A {
-  public:
-    virtual ~A() = default;
-};
-
-class AImpl : public A {
-  public:
-    INJECT_CONSTRUCTOR(AImpl, ()) {
-        std::cout << "BeansWithUniqueButHasSharedPtrConstructor AImpl constructor" << std::endl;
-    }
-
-    ~AImpl() override {
-        std::cout << "BeansWithUniqueButHasSharedPtrConstructor AImpl destructor" << std::endl;
-    }
-
-  private:
-    BOOST_DESCRIBE_CLASS(AImpl, (A), (), (), ())
-};
-
-class B {
-  public:
-    virtual ~B() = default;
-};
-
-class BImpl : public B {
-  public:
-    INJECT_EXPLICIT_CONSTRUCTOR(BImpl, (const std::shared_ptr<A> a)) : _a(a) {
-        std::cout << "BeansWithUniqueButHasSharedPtrConstructor BImpl constructor" << std::endl;
-    }
-
-    ~BImpl() override {
-        std::cout << "BeansWithUniqueButHasSharedPtrConstructor BImpl destructor" << std::endl;
-    }
-
-  private:
-    std::shared_ptr<A> _a;
-    BOOST_DESCRIBE_CLASS(BImpl, (B), (), (), ())
-};
-
-class C {
-  public:
-    virtual ~C() = default;
-};
-
-class CImpl : public C {
-  public:
-    INJECT_CONSTRUCTOR(CImpl, (const std::shared_ptr<A> a, std::unique_ptr<B> b))
-        : _a(a), _b(std::move(b)) {
-        std::cout << "BeansWithUniqueButHasSharedPtrConstructor CImpl constructor" << std::endl;
-    }
-
-    ~CImpl() override {
-        std::cout << "BeansWithUniqueButHasSharedPtrConstructor CImpl destructor" << std::endl;
-    }
-
-    std::shared_ptr<A> _a;
-    std::unique_ptr<B> _b;
-
-    BOOST_DESCRIBE_CLASS(CImpl, (C), (), (), ())
-};
-}  // namespace BeansWithUniqueButHasSharedPtrConstructor
 
 namespace BeansWithoutInterfaceHeritated {
 

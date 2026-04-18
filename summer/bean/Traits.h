@@ -31,12 +31,6 @@ struct ArgTypeTraits {
     using type = T;
 };
 
-// 指针
-template <typename T>
-struct ArgTypeTraits<T*> {
-    using type = typename ArgTypeTraits<T>::type;
-};
-
 // std::shared_ptr
 template <typename T>
 struct ArgTypeTraits<std::shared_ptr<T>> {
@@ -46,12 +40,6 @@ struct ArgTypeTraits<std::shared_ptr<T>> {
 // const
 template <typename T>
 struct ArgTypeTraits<const T> {
-    using type = typename ArgTypeTraits<T>::type;
-};
-
-// &
-template <typename T>
-struct ArgTypeTraits<T&> {
     using type = typename ArgTypeTraits<T>::type;
 };
 
