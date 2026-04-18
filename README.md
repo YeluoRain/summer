@@ -174,13 +174,239 @@ TEST_F(BeanTest, test_construct_beans_with_creator_function) {
 
 与Java不同的是，C++拥有多种指针类型或者引用，来进行对象的传递。这块的特性是C++所独有的。Summer所支持的入参类型比较丰富：
 
-* 裸指针（*）
 * 智能指针（std::shared_ptr）
 * 智能指针（std::unique_ptr）
-* 引用类型（&）（还在调试中。。。。）
 * std::list和std::vector与上述指针类型嵌套的类型
 
-值的注意的是，与Springboot的默认设置类似，除std::unique_ptr以外的入参类型，都是共享的一个实例。但在std::unique_ptr入参类型情况下，由于唯一所有权的特殊性，将在每次调用构造函数时生存新的实例，与Springboost的prototype装载模式类型。
+值的注意的是，与Springboot的默认设置类似，除std::unique_ptr以外的入参类型，都是共享的一个实例。但在std::unique_ptr入参类型情况下，由于唯一所有权的特殊性，将在每次调用构造函数时生存新的实例，与Springboot的prototype装载模式类型。
+
+## 实现原理
+
+### 核心类图
+
+```mermaid
+classDiagram
+    class BeanResolver~T~ {
+        +BeanType
+        +ImplementOf: tuple~type~
+        +DependOn: tuple~type~
+        +Args: tuple~type~
+    }
+
+    class Vertex~T~ {
+        +NodeType = T
+        +InList: tuple~type~
+        +OutList: tuple~type~
+        +InDegree: size_t
+        +OutDegree: size_t
+    }
+
+    class BeanCreator~BeanType~ {
+        -m_creator: function~BeanType*()~
+        -m_sharedInstance: shared_ptr~BeanType~
+        +GetShared(): shared_ptr~BeanType~
+        +GetUnique(): unique_ptr~BeanType~
+        +Reset(): void
+    }
+
+    class BeanCreatorInvoker~ArgType~ {
+        +Invoke(resolvers, creatorMap): ArgType
+    }
+
+    class BeanFactory~AllBeanContainer~ {
+        -m_container: tuple~resolverMap, creatorMap~
+        +GetShared~BeanType~(): shared_ptr~BeanType~
+        +GetUnique~BeanType~(): unique_ptr~BeanType~
+        +GetSharedList~BeanType~(): list~shared_ptr~BeanType~~
+        +GetUniqueList~BeanType~(): list~unique_ptr~BeanType~~
+        +Reset(): void
+    }
+
+    class FactoryBuilder {
+        +WithBeans~BeanTypes~(): FactoryBuilder
+        +WithCreators~Creators~(): FactoryBuilder
+        +Build(): BeanFactory
+    }
+
+    class ArgTypeTraits~T~ {
+        +type: T
+    }
+
+    BeanResolver <-- Vertex : uses
+    BeanResolver <-- BeanFactory : uses
+    BeanCreator <-- BeanFactory : contains
+    BeanCreatorInvoker <-- BeanCreator : uses
+    ArgTypeTraits <-- BeanCreatorInvoker : uses for type unwrapping
+```
+
+### 设计思路
+
+#### 1. 静态反射与类型注册
+
+Summer利用Boost.Describe在编译期提取类的继承关系，结合宏`INJECT_CONSTRUCTOR`和`INJECT_EXPLICIT_CONSTRUCTOR`将构造函数的签名注册到类型系统。
+
+关键类型`BeanResolver<T>`通过模板特化机制：
+- 对于使用宏定义的类：从`FactortMethodType`提取`ImplementOf`（实现的所有接口）和`DependOn`（构造函数参数类型）
+- 对于工厂方法：从`CreatorWrapper<CreatorFunc>`提取相关信息
+- 对于无宏的简单类：提供默认实现
+
+#### 2. 有向无环图（DAG）构建
+
+每个Bean被建模为DAG中的一个顶点：
+- **OutList (出度)**：该Bean依赖的其他Bean类型
+- **InList (入度)**：实现该Bean的所有类型（包括自身）
+
+通过`Vertex::GetBeansInOrder`，框架在编译期执行拓扑排序：
+1. 找出所有无依赖的顶点（出度为0）
+2. 移除这些顶点，更新剩余顶点的依赖关系
+3. 重复直到所有顶点被处理
+4. 若剩余顶点仍有依赖，则报告循环依赖错误
+
+#### 3. 共享实例与独享实例
+
+**共享实例（Singleton模式）**：
+```cpp
+// Constructor.h
+template <typename BeanType>
+class BeanCreator {
+    std::shared_ptr<BeanType> m_sharedInstance;
+public:
+    std::shared_ptr<BeanType> GetShared() {
+        if (m_sharedInstance == nullptr) {
+            m_sharedInstance = std::shared_ptr<BeanType>(m_creator());
+        }
+        return m_sharedInstance;
+    }
+};
+```
+
+**独享实例（Prototype模式）**：
+```cpp
+template <typename BeanType>
+class BeanCreator {
+public:
+    std::unique_ptr<BeanType> GetUnique() {
+        return std::unique_ptr<BeanType>(m_creator());
+    }
+};
+```
+
+#### 4. 参数类型解包
+
+`ArgTypeTraits`模板将各种参数类型"解包"为原始Bean类型：
+
+| 原始类型 | 解包后 |
+|---------|--------|
+| `const std::shared_ptr<A>&` | `A` |
+| `std::unique_ptr<A>` | `A` |
+| `const std::list<std::shared_ptr<A>>&` | `A` |
+| `std::vector<std::unique_ptr<A>>` | `A` |
+
+这使得框架能够统一处理不同包装类型的参数。
+
+#### 5. BeanCreatorInvoker分发
+
+`BeanCreatorInvoker<ArgType>`根据参数类型分发到不同的实例获取策略：
+
+```cpp
+// shared_ptr类型 - 返回共享实例
+template <typename ArgType>
+struct BeanCreatorInvoker<std::shared_ptr<ArgType>> {
+    static constexpr std::shared_ptr<ArgType> Invoke(...) {
+        return creator->GetShared();  // 复用单例
+    }
+};
+
+// unique_ptr类型 - 返回新实例
+template <typename ArgType>
+struct BeanCreatorInvoker<std::unique_ptr<ArgType>> {
+    static constexpr std::unique_ptr<ArgType> Invoke(...) {
+        return creator->GetUnique();  // 创建新实例
+    }
+};
+
+// list类型 - 批量获取
+template <typename ArgType>
+struct BeanCreatorInvoker<std::list<ArgType>> {
+    static constexpr std::list<ArgType> Invoke(...) {
+        // 对每个resolver调用Invoke，返回列表
+    }
+};
+```
+
+### Bean创建流程
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     编译期构建阶段                                │
+├─────────────────────────────────────────────────────────────────┤
+│ 1. FactoryBuilder::Build()                                       │
+│    └─> Beans::CreateFactory(beans)                               │
+│         │                                                        │
+│         ├─> Vertex::ToVertexes(beans)                           │
+│         │   将所有Bean转换为DAG顶点                              │
+│         │                                                        │
+│         ├─> Vertex::GetBeansInOrder()                            │
+│         │   编译期拓扑排序                                       │
+│         │   ├─> 找出无依赖的顶点（出度=0）                       │
+│         │   ├─> 移除并更新依赖关系                               │
+│         │   └─> 重复直到所有顶点处理完毕                         │
+│         │                                                        │
+│         └─> 构建 resolverMap 和 creatorMap                       │
+│             resolverMap: BeanType -> resolvers tuple              │
+│             creatorMap: resolver -> BeanCreator pointer           │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                     运行时获取阶段                               │
+├─────────────────────────────────────────────────────────────────┤
+│ 2. BeanFactory::GetShared<A>()                                   │
+│    │                                                             │
+│    ├─> FindResolvers<A>()                                       │
+│    │   在resolverMap中查找A的resolvers                           │
+│    │                                                             │
+│    └─> FindCreator(resolver) -> creator                         │
+│        │                                                         │
+│        └─> creator->GetShared()                                 │
+│            │                                                     │
+│            ├─> 如果m_sharedInstance存在，直接返回               │
+│            │                                                     │
+│            └─> 否则调用lambda创建实例：                          │
+│                │                                                 │
+│                ├─> 获取构造函数参数                               │
+│                │   BeanCreatorInvoker<ArgType>::Invoke(...)      │
+│                │   ├─> ArgTypeTraits解包获取原始类型             │
+│                │   ├─> 在resolverMap中查找依赖的resolver        │
+│                │   └─> 递归调用creator->GetShared/GetUnique     │
+│                │                                                 │
+│                └─> 调用new或工厂方法创建Bean                      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 完整示例解析
+
+以`FactoryBuilder<>().WithBeans<CImpl, BImpl, AImpl>().Build()`为例：
+
+**编译期**：
+1. 定义三个BeanResolver：AImpl、BImpl、CImpl
+2. 构建DAG：
+   - AImpl：无依赖（出度0）
+   - BImpl：依赖A（出度1）
+   - CImpl：依赖A和B（出度2）
+3. 拓扑排序结果顺序：AImpl -> BImpl -> CImpl
+4. 创建creatorMap：
+   - AImpl的creator：无参数，直接new AImpl()
+   - BImpl的creator：需要一个A，通过resolverMap找到AImpl的creator，调用GetShared()
+   - CImpl的creator：需要A和B，同上
+
+**运行时获取C**：
+1. `GetShared<C>()` 查找C的resolver -> CImpl
+2. 调用CImpl的creator：
+   - 参数A：通过ArgTypeTraits解包为A，查resolverMap得AImpl的creator，调用GetShared()
+   - 参数B：通过ArgTypeTraits解包为B，查resolverMap得BImpl的creator，调用GetShared()
+   - 创建CImpl实例
+3. 返回C的shared_ptr
 
 ### 请注意
 
