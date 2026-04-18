@@ -33,10 +33,14 @@ struct Vertex {
         return boost::hana::transform(beans, ToVertex);
     };
 
-    static constexpr auto ToBeanResovler = [](auto&& vertex) {
+    static constexpr auto ToBeanResolver = [](auto&& vertex) {
         using namespace boost;
         using VertexType = typename decltype(hana::typeid_(vertex))::type;
         return hana::type_c<typename VertexType::NodeType>;
+    };
+
+    static constexpr auto ToBeans = [](auto&& vertexes) {
+        return boost::hana::transform(vertexes, ToBeanResolver);
     };
 
     static constexpr auto GetIndependentBeans = [](auto&& vertexes) {
