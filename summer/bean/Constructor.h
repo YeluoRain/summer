@@ -74,47 +74,20 @@ struct SingletonInvokerHelper {
 template <typename ArgType>
 struct BeanCreatorInvoker {
     template <typename BeanResolvers, typename CreatorMap>
-    static constexpr ArgType Invoke(BeanResolvers&& resolvers, CreatorMap&& creatorMap) {
-        return *SingletonInvokerHelper<ArgType>::Invoke(std::forward<BeanResolvers>(resolvers),
-                                                        std::forward<CreatorMap>(creatorMap));
+    static constexpr std::shared_ptr<ArgType> Invoke(BeanResolvers&& resolvers,
+                                                     CreatorMap&& creatorMap) {
+        return SingletonInvokerHelper<ArgType>::Invoke(std::forward<BeanResolvers>(resolvers),
+                                                       std::forward<CreatorMap>(creatorMap));
     }
 };
 
 template <typename ArgType>
 struct BeanCreatorInvoker<const ArgType> {
     template <typename BeanResolvers, typename CreatorMap>
-    static constexpr ArgType Invoke(BeanResolvers&& resolvers, CreatorMap&& creatorMap) {
-        return BeanCreatorInvoker<ArgType>::Invoke(std::forward<BeanResolvers>(resolvers),
-                                                   std::forward<CreatorMap>(creatorMap));
-    }
-};
-
-template <typename ArgType>
-struct BeanCreatorInvoker<ArgType&> {
-    template <typename BeanResolvers, typename CreatorMap>
-    static constexpr ArgType Invoke(BeanResolvers&& resolvers, CreatorMap&& creatorMap) {
-        return BeanCreatorInvoker<ArgType>::Invoke(std::forward<BeanResolvers>(resolvers),
-                                                   std::forward<CreatorMap>(creatorMap));
-    }
-};
-
-template <typename ArgType>
-struct BeanCreatorInvoker<ArgType*> {
-    template <typename BeanResolvers, typename CreatorMap>
-    static constexpr ArgType* Invoke(BeanResolvers&& resolvers, CreatorMap&& creatorMap) {
-        return SingletonInvokerHelper<ArgType>::Invoke(std::forward<BeanResolvers>(resolvers),
-                                                       std::forward<CreatorMap>(creatorMap))
-            .get();
-    }
-};
-
-template <typename ArgType>
-struct BeanCreatorInvoker<std::shared_ptr<ArgType>> {
-    template <typename BeanResolvers, typename CreatorMap>
     static constexpr std::shared_ptr<ArgType> Invoke(BeanResolvers&& resolvers,
                                                      CreatorMap&& creatorMap) {
-        return SingletonInvokerHelper<ArgType>::Invoke(std::forward<BeanResolvers>(resolvers),
-                                                       std::forward<CreatorMap>(creatorMap));
+        return BeanCreatorInvoker<ArgType>::Invoke(std::forward<BeanResolvers>(resolvers),
+                                                   std::forward<CreatorMap>(creatorMap));
     }
 };
 
