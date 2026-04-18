@@ -174,10 +174,8 @@ TEST_F(BeanTest, test_construct_beans_with_creator_function) {
 
 与Java不同的是，C++拥有多种指针类型或者引用，来进行对象的传递。这块的特性是C++所独有的。Summer所支持的入参类型比较丰富：
 
-* 裸指针（*）
 * 智能指针（std::shared_ptr）
 * 智能指针（std::unique_ptr）
-* 引用类型（&）（还在调试中。。。。）
 * std::list和std::vector与上述指针类型嵌套的类型
 
 值的注意的是，与Springboot的默认设置类似，除std::unique_ptr以外的入参类型，都是共享的一个实例。但在std::unique_ptr入参类型情况下，由于唯一所有权的特殊性，将在每次调用构造函数时生存新的实例，与Springboost的prototype装载模式类型。
