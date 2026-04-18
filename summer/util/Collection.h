@@ -22,6 +22,10 @@ namespace summer::util::collection::tuple {
 using namespace boost;
 
 struct MergeTupleFuncType {
+    static constexpr auto Merge() {
+        return boost::hana::make_tuple();
+    }
+
     template <typename Tuple0>
     static constexpr auto Merge(const Tuple0& tuple0) {
         return tuple0;
@@ -30,7 +34,7 @@ struct MergeTupleFuncType {
     template <typename Tuple0, typename Tuple1, typename... Tuplen>
     static constexpr auto Merge(const Tuple0& tuple0, const Tuple1& tuple1,
                                 const Tuplen&... tuplen) {
-        auto tuple = hana::concat(tuple0, tuple1);
+        auto tuple = boost::hana::concat(tuple0, tuple1);
         return Merge(tuple, tuplen...);
     }
 };

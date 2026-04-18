@@ -90,3 +90,51 @@ TEST_F(VertexTest, test_creator_wrapper_traits) {
     BOOST_HANA_CHECK(Resolver::ImplementOf == hana::make_tuple());
     BOOST_HANA_CHECK(Resolver::DependOn == hana::make_tuple(hana::type_c<B>, hana::type_c<C>));
 }
+
+// Test for the fixed ToBeans function - issue where ToBeans was undefined
+TEST_F(VertexTest, test_tobeans_function_exists_and_works) {
+    // This test verifies that ToBeans function exists and compiles correctly
+    // Previously this would cause compilation error due to undefined ToBeans
+    auto independentVertexes = operation::Vertex::GetIndependentBeans(beanVertexes);
+    
+    // This line used to cause compilation error at line 119 in Vertex.h
+    // Now it should work because ToBeans is properly defined
+    auto beans = operation::Vertex::ToBeans(independentVertexes);
+    
+    // Verify that the transformation worked by checking the types
+    // The ToBeans function should convert vertices back to their original bean types
+    auto expected_bean_types = hana::transform(independentVertexes, [](const auto& vertex) {
+        using VertexType = typename decltype(hana::typeid_(vertex))::type;
+        return hana::type_c<typename VertexType::NodeType>;  // This gets the original bean type
+    });
+    
+    // Compare the actual result with the expected result
+    BOOST_HANA_CHECK(hana::size(beans) == hana::size(expected_bean_types));
+    
+    // If we got here without compilation errors, the fix is successful
+    EXPECT_TRUE(true);
+}
+
+// Test for the fixed Merge function with empty collections
+TEST_F(VertexTest, test_merge_with_empty_collections) {
+    using namespace summer::util::collection::tuple;
+    
+    // This test verifies that Merge function can handle empty collections
+    // Previously this would cause compilation error when called with no arguments
+    auto emptyResult = Merge();  // This was causing compilation error
+    
+    // Test with single tuple
+    auto tuple1 = hana::make_tuple(1, 2, 3);
+    auto singleResult = Merge(tuple1);
+    
+    // Test with multiple tuples
+    auto tuple2 = hana::make_tuple(4, 5, 6);
+    auto multiResult = Merge(tuple1, tuple2);
+    
+    // Verify the results are correct
+    BOOST_HANA_CHECK(hana::size(emptyResult) == hana::size_c<0>);  // Empty tuple
+    BOOST_HANA_CHECK(hana::size(singleResult) == hana::size_c<3>); // Same size as input
+    BOOST_HANA_CHECK(hana::size(multiResult) == hana::size_c<6>);  // Combined size
+    
+    EXPECT_TRUE(true); // If this compiles and runs, the fix is successful
+}

@@ -47,7 +47,7 @@ struct Beans {
         auto independentVertexes =
             dag::operation::Vertex::GetBeansInOrder(dag::operation::Vertex::ToVertexes(beans));
         auto independentBeanResolvers =
-            hana::transform(independentVertexes, dag::operation::Vertex::ToBeanResovler);
+            hana::transform(independentVertexes, dag::operation::Vertex::ToBeanResolver);
         auto context = hana::make_tuple(hana::make_map(), hana::make_map());
         return hana::fold_left(
             independentBeanResolvers, context, [](auto&& context0, auto&& beanResolver) {
