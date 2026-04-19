@@ -28,12 +28,14 @@ namespace hana = boost::hana;
 template <typename BeanType>
 class BeanCreator {
   public:
-    explicit BeanCreator(std::function<BeanType*()> creator)
+    using CreatorFuncType = std::function<std::shared_ptr<BeanType>()>;
+
+    explicit BeanCreator(CreatorFuncType creator)
         : m_creator(creator), m_sharedInstance(nullptr) {}
 
     std::shared_ptr<BeanType> GetShared() {
         if (m_sharedInstance == nullptr) {
-            m_sharedInstance = std::shared_ptr<BeanType>(m_creator());
+            m_sharedInstance = m_creator();
             if (m_sharedInstance == nullptr) {
                 throw std::runtime_error("Failed to create shared instance.");
             }
@@ -42,11 +44,11 @@ class BeanCreator {
     }
 
     std::unique_ptr<BeanType> GetUnique() {
-        auto* rawPointer = m_creator();
-        if (rawPointer == nullptr) {
+        auto ptr = m_creator();
+        if (ptr == nullptr) {
             throw std::runtime_error("Failed to create unique instance.");
         }
-        return std::unique_ptr<BeanType>(rawPointer);
+        return std::make_unique<BeanType>(*ptr);
     }
 
     void Reset() {
@@ -54,7 +56,7 @@ class BeanCreator {
     }
 
   private:
-    std::function<BeanType*()> m_creator;
+    CreatorFuncType m_creator;
     std::shared_ptr<BeanType> m_sharedInstance;
 };
 

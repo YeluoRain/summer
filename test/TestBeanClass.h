@@ -101,6 +101,26 @@ inline A* createA() {
     return new AImpl();
 }
 
+inline std::shared_ptr<A> createAShared() {
+    return std::make_shared<AImpl>();
+}
+
+inline std::shared_ptr<B> createBShared(std::shared_ptr<A> a) {
+    return std::make_shared<BImpl>(a);
+}
+
+inline std::shared_ptr<C> createCShared(std::shared_ptr<A> a, std::shared_ptr<B> b) {
+    return std::make_shared<CImpl>(a, b);
+}
+
+inline std::unique_ptr<A> createAUnique() {
+    return std::make_unique<AImpl>();
+}
+
+inline std::unique_ptr<B> createBUnique(std::shared_ptr<A> a) {
+    return std::make_unique<BImpl>(a);
+}
+
 }  // namespace NormalCase
 
 namespace BeanWithNoMacro {
