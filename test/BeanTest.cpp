@@ -289,3 +289,29 @@ TEST_F(BeanTest, test_construct_beans_with_shared_ptr_and_unique_ptr_creator) {
     EXPECT_NE(c.get(), nullptr);
     EXPECT_EQ(a.get(), factory.GetShared<AImpl>().get());
 }
+
+TEST_F(BeanTest, test_non_copyable_bean_with_shared_ptr_factory) {
+    using namespace NonCopyableCase;
+    auto factory = FactoryBuilder<>()
+                       .WithCreators<createAShared, createBShared>()
+                       .Build();
+    auto a = factory.GetShared<A>();
+    auto b = factory.GetShared<B>();
+    EXPECT_NE(a.get(), nullptr);
+    EXPECT_NE(b.get(), nullptr);
+}
+
+TEST_F(BeanTest, test_non_copyable_bean_with_beans_and_factory) {
+    using namespace NonCopyableCase;
+    auto factory = FactoryBuilder<>()
+                       .WithBeans<AImpl, BImpl>()
+                       .Build();
+    auto a = factory.GetShared<A>();
+    auto b = factory.GetShared<B>();
+    auto aImpl = factory.GetShared<AImpl>();
+    auto bImpl = factory.GetShared<BImpl>();
+    EXPECT_NE(a.get(), nullptr);
+    EXPECT_NE(b.get(), nullptr);
+    EXPECT_EQ(a.get(), aImpl.get());
+    EXPECT_EQ(b.get(), bImpl.get());
+}

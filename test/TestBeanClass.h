@@ -748,4 +748,52 @@ class H2Impl : public H {
 
 }  // namespace ComplexDagCase
 
+namespace NonCopyableCase {
+class A {
+  public:
+    virtual ~A() = default;
+    virtual void testA() = 0;
+};
+
+class AImpl : public A {
+  public:
+    AImpl(const AImpl&) = delete;
+    AImpl& operator=(const AImpl&) = delete;
+    AImpl(AImpl&&) = delete;
+    AImpl& operator=(AImpl&&) = delete;
+
+    INJECT_CONSTRUCTOR(AImpl, ()) {}
+    void testA() override {}
+    BOOST_DESCRIBE_CLASS(AImpl, (A), (), (), ())
+};
+
+class B {
+  public:
+    virtual ~B() = default;
+    virtual void testB() = 0;
+};
+
+class BImpl : public B {
+  public:
+    BImpl(const BImpl&) = delete;
+    BImpl& operator=(const BImpl&) = delete;
+    BImpl(BImpl&&) = delete;
+    BImpl& operator=(BImpl&&) = delete;
+
+    INJECT_EXPLICIT_CONSTRUCTOR(BImpl, (const std::shared_ptr<A>& a)) : _a(a) {}
+    void testB() override {}
+    std::shared_ptr<A> _a;
+    BOOST_DESCRIBE_CLASS(BImpl, (B), (), (), ())
+};
+
+inline std::shared_ptr<A> createAShared() {
+    return std::make_shared<AImpl>();
+}
+
+inline std::shared_ptr<B> createBShared(std::shared_ptr<A> a) {
+    return std::make_shared<BImpl>(a);
+}
+
+}  // namespace NonCopyableCase
+
 #endif /* TEST_TESTBEANCLASS */
