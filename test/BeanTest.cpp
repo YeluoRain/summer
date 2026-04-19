@@ -234,3 +234,58 @@ TEST_F(BeanTest, test_complex_dag_with_8_beans) {
     EXPECT_EQ(aList.size(), 1);
     EXPECT_EQ(aList.front().get(), a.get());
 }
+
+TEST_F(BeanTest, test_construct_beans_with_creator_returning_shared_ptr) {
+    using namespace NormalCase;
+    auto factory = FactoryBuilder<>()
+                       .WithCreators<createAShared, createBShared, createCShared>()
+                       .Build();
+    auto a = factory.GetShared<A>();
+    auto b = factory.GetShared<B>();
+    auto c = factory.GetShared<C>();
+    EXPECT_NE(a.get(), nullptr);
+    EXPECT_NE(b.get(), nullptr);
+    EXPECT_NE(c.get(), nullptr);
+}
+
+TEST_F(BeanTest, test_construct_beans_with_creator_returning_unique_ptr) {
+    using namespace NormalCase;
+    auto factory = FactoryBuilder<>()
+                       .WithCreators<createAUnique, createBUnique>()
+                       .WithBeans<CImpl>()
+                       .Build();
+    auto a = factory.GetShared<A>();
+    auto b = factory.GetShared<B>();
+    auto c = factory.GetShared<C>();
+    EXPECT_NE(a.get(), nullptr);
+    EXPECT_NE(b.get(), nullptr);
+    EXPECT_NE(c.get(), nullptr);
+}
+
+TEST_F(BeanTest, test_construct_beans_mixed_raw_and_smart_ptr_factory) {
+    using namespace NormalCase;
+    auto factory = FactoryBuilder<>()
+                       .WithCreators<createA, createBShared, createCImpl>()
+                       .Build();
+    auto a = factory.GetShared<A>();
+    auto b = factory.GetShared<B>();
+    auto c = factory.GetShared<C>();
+    EXPECT_NE(a.get(), nullptr);
+    EXPECT_NE(b.get(), nullptr);
+    EXPECT_NE(c.get(), nullptr);
+}
+
+TEST_F(BeanTest, test_construct_beans_with_shared_ptr_and_unique_ptr_creator) {
+    using namespace NormalCase;
+    auto factory = FactoryBuilder<>()
+                       .WithBeans<AImpl>()
+                       .WithCreators<createBShared, createCShared>()
+                       .Build();
+    auto a = factory.GetShared<A>();
+    auto b = factory.GetShared<B>();
+    auto c = factory.GetShared<C>();
+    EXPECT_NE(a.get(), nullptr);
+    EXPECT_NE(b.get(), nullptr);
+    EXPECT_NE(c.get(), nullptr);
+    EXPECT_EQ(a.get(), factory.GetShared<AImpl>().get());
+}
