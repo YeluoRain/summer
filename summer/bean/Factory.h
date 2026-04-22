@@ -22,6 +22,20 @@
 
 namespace summer::bean::factory {
 
+namespace detail {
+template <typename BeanType, typename RetType>
+struct CreatorFuncTypeImpl {
+    using type = std::function<RetType()>;
+};
+
+template <typename BeanType>
+struct CreatorFuncType {
+    using RawPtrType = std::function<BeanType*()>;
+    using SharedPtrType = std::function<std::shared_ptr<BeanType>()>;
+    using UniquePtrType = std::function<std::unique_ptr<BeanType>()>;
+};
+}  // namespace detail
+
 struct Beans {
     static constexpr auto Inject = [](auto&& beans) {
         using namespace boost;
@@ -55,53 +69,133 @@ struct Beans {
                 auto resolverMap = context0[hana::size_c<0>];
                 auto creatorMap = context0[hana::size_c<1>];
                 using BeanResolverType = typename decltype(hana::typeid_(beanResolver))::type;
-                using BeanType = typename BeanResolverType::BeanType;
-                auto parents = dag::operation::Vertex::GetAllParents(hana::tuple_t<BeanType>);
+                using T = typename BeanResolverType::BeanType;
 
-                auto creator = [resolverMap, creatorMap]() -> std::shared_ptr<BeanType> {
-                    auto argTypes = BeanResolverType::Args;
-                    auto args =
-                        hana::transform(argTypes, [&resolverMap, &creatorMap](auto&& bean0) {
-                            using ArgType = typename decltype(hana::typeid_(bean0))::type;
-                            using RawArgType = typename traits::ArgTypeTraits<ArgType>::type;
-                            auto resolvers = hana::find(resolverMap, hana::type_c<RawArgType>)
-                                                 .value_or(hana::make_tuple());
-                            return constructor::BeanCreatorInvoker<ArgType>::Invoke(resolvers,
-                                                                                    creatorMap);
-                        });
-                    return hana::unpack(std::move(args), [](auto&&... args0) {
-                        if constexpr (traits::IsCreatorWrapper<
-                                          typename BeanResolverType::Type>::value) {
-                            using CreatorRetType = typename traits::ConstructorTraits<
-                                decltype(BeanResolverType::Type::Creator)>::RetType;
-                            if constexpr (std::is_same_v<CreatorRetType,
-                                                        std::shared_ptr<BeanType>>) {
+                if constexpr (traits::IsCreatorWrapper<typename BeanResolverType::Type>::value) {
+                    using CreatorRetType = typename traits::ConstructorTraits<
+                        decltype(BeanResolverType::Type::Creator)>::RetType;
+
+                    if constexpr (std::is_same_v<CreatorRetType, std::shared_ptr<T>>) {
+                        auto creator = [resolverMap, creatorMap]() -> std::shared_ptr<T> {
+                            auto argTypes = BeanResolverType::Args;
+                            auto args =
+                                hana::transform(argTypes, [&resolverMap, &creatorMap](auto&& bean0) {
+                                    using ArgType = typename decltype(hana::typeid_(bean0))::type;
+                                    using RawArgType = typename traits::ArgTypeTraits<ArgType>::type;
+                                    auto resolvers = hana::find(resolverMap, hana::type_c<RawArgType>)
+                                                         .value_or(hana::make_tuple());
+                                    return constructor::BeanCreatorInvoker<ArgType>::Invoke(resolvers,
+                                                                                            creatorMap);
+                                });
+                            return hana::unpack(std::move(args), [](auto&&... args0) {
                                 return BeanResolverType::Type::Creator(
                                     std::forward<decltype(args0)>(args0)...);
-                            } else if constexpr (std::is_same_v<CreatorRetType,
-                                                        std::unique_ptr<BeanType>>) {
+                            });
+                        };
+                        auto pair =
+                            hana::make_pair(hana::type_c<T>,
+                                            std::make_shared<constructor::BeanCreator<
+                                                T, std::function<std::shared_ptr<T>()>>>(
+                                                std::move(creator)));
+                        auto newCreatorMap = hana::insert(creatorMap, pair);
+                        return hana::make_tuple(
+                            MergeBeanMap(resolverMap,
+                                        dag::operation::Vertex::GetAllParents(
+                                            hana::tuple_t<T>),
+                                        hana::type_c<T>),
+                            newCreatorMap);
+
+                    } else if constexpr (std::is_same_v<CreatorRetType, std::unique_ptr<T>>) {
+                        auto creator = [resolverMap, creatorMap]() -> std::shared_ptr<T> {
+                            auto argTypes = BeanResolverType::Args;
+                            auto args =
+                                hana::transform(argTypes, [&resolverMap, &creatorMap](auto&& bean0) {
+                                    using ArgType = typename decltype(hana::typeid_(bean0))::type;
+                                    using RawArgType = typename traits::ArgTypeTraits<ArgType>::type;
+                                    auto resolvers = hana::find(resolverMap, hana::type_c<RawArgType>)
+                                                         .value_or(hana::make_tuple());
+                                    return constructor::BeanCreatorInvoker<ArgType>::Invoke(resolvers,
+                                                                                            creatorMap);
+                                });
+                            return hana::unpack(std::move(args), [](auto&&... args0) {
                                 auto uniquePtr = BeanResolverType::Type::Creator(
                                     std::forward<decltype(args0)>(args0)...);
-                                return std::shared_ptr<BeanType>(uniquePtr.release());
-                            } else {
-                                return std::shared_ptr<BeanType>(
+                                return std::shared_ptr<T>(uniquePtr.release());
+                            });
+                        };
+                        auto pair =
+                            hana::make_pair(hana::type_c<T>,
+                                            std::make_shared<constructor::BeanCreator<
+                                                T, std::function<std::shared_ptr<T>()>>>(
+                                                std::move(creator)));
+                        auto newCreatorMap = hana::insert(creatorMap, pair);
+                        return hana::make_tuple(
+                            MergeBeanMap(resolverMap,
+                                        dag::operation::Vertex::GetAllParents(
+                                            hana::tuple_t<T>),
+                                        hana::type_c<T>),
+                            newCreatorMap);
+
+                    } else {
+                        auto creator = [resolverMap, creatorMap]() -> std::shared_ptr<T> {
+                            auto argTypes = BeanResolverType::Args;
+                            auto args =
+                                hana::transform(argTypes, [&resolverMap, &creatorMap](auto&& bean0) {
+                                    using ArgType = typename decltype(hana::typeid_(bean0))::type;
+                                    using RawArgType = typename traits::ArgTypeTraits<ArgType>::type;
+                                    auto resolvers = hana::find(resolverMap, hana::type_c<RawArgType>)
+                                                         .value_or(hana::make_tuple());
+                                    return constructor::BeanCreatorInvoker<ArgType>::Invoke(resolvers,
+                                                                                            creatorMap);
+                                });
+                            return hana::unpack(std::move(args), [](auto&&... args0) {
+                                return std::shared_ptr<T>(
                                     BeanResolverType::Type::Creator(
                                         std::forward<decltype(args0)>(args0)...));
-                            }
-                        } else {
-                            return std::shared_ptr<BeanType>(
-                                new BeanType(std::forward<decltype(args0)>(args0)...));
-                        }
-                    });
-                };
-
-                auto pair =
-                    hana::make_pair(hana::type_c<BeanType>,
-                                    std::make_shared<constructor::BeanCreator<BeanType>>(
-                                        typename constructor::BeanCreator<BeanType>::CreatorFuncType(creator)));
-                auto newCreatorMap = hana::insert(creatorMap, pair);
-                return hana::make_tuple(MergeBeanMap(resolverMap, parents, hana::type_c<BeanType>),
-                                        newCreatorMap);
+                            });
+                        };
+                        auto pair =
+                            hana::make_pair(hana::type_c<T>,
+                                            std::make_shared<constructor::BeanCreator<
+                                                T, std::function<std::shared_ptr<T>()>>>(
+                                                std::move(creator)));
+                        auto newCreatorMap = hana::insert(creatorMap, pair);
+                        return hana::make_tuple(
+                            MergeBeanMap(resolverMap,
+                                        dag::operation::Vertex::GetAllParents(
+                                            hana::tuple_t<T>),
+                                        hana::type_c<T>),
+                            newCreatorMap);
+                    }
+                } else {
+                    auto creator = [resolverMap, creatorMap]() -> std::shared_ptr<T> {
+                        auto argTypes = BeanResolverType::Args;
+                        auto args =
+                            hana::transform(argTypes, [&resolverMap, &creatorMap](auto&& bean0) {
+                                using ArgType = typename decltype(hana::typeid_(bean0))::type;
+                                using RawArgType = typename traits::ArgTypeTraits<ArgType>::type;
+                                auto resolvers = hana::find(resolverMap, hana::type_c<RawArgType>)
+                                                     .value_or(hana::make_tuple());
+                                return constructor::BeanCreatorInvoker<ArgType>::Invoke(resolvers,
+                                                                                        creatorMap);
+                            });
+                        return hana::unpack(std::move(args), [](auto&&... args0) {
+                            return std::shared_ptr<T>(
+                                new T(std::forward<decltype(args0)>(args0)...));
+                        });
+                    };
+                    auto pair =
+                        hana::make_pair(hana::type_c<T>,
+                                        std::make_shared<constructor::BeanCreator<
+                                            T, std::function<std::shared_ptr<T>()>>>(
+                                            std::move(creator)));
+                    auto newCreatorMap = hana::insert(creatorMap, pair);
+                    return hana::make_tuple(
+                        MergeBeanMap(resolverMap,
+                                    dag::operation::Vertex::GetAllParents(hana::tuple_t<T>),
+                                    hana::type_c<T>),
+                        newCreatorMap);
+                }
             });
     };
 };

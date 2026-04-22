@@ -25,13 +25,14 @@
 namespace summer::bean::constructor {
 namespace hana = boost::hana;
 
-template <typename BeanType>
-class BeanCreator {
-  public:
-    using CreatorFuncType = std::function<std::shared_ptr<BeanType>()>;
+template <typename BeanType, typename CreatorFunc>
+class BeanCreator;
 
-    explicit BeanCreator(CreatorFuncType creator)
-        : m_creator(creator), m_sharedInstance(nullptr) {}
+template <typename BeanType>
+class BeanCreator<BeanType, std::function<std::shared_ptr<BeanType>()>> {
+  public:
+    explicit BeanCreator(std::function<std::shared_ptr<BeanType>()> creator)
+        : m_creator(std::move(creator)), m_sharedInstance(nullptr) {}
 
     std::shared_ptr<BeanType> GetShared() {
         if (m_sharedInstance == nullptr) {
@@ -56,7 +57,73 @@ class BeanCreator {
     }
 
   private:
-    CreatorFuncType m_creator;
+    std::function<std::shared_ptr<BeanType>()> m_creator;
+    std::shared_ptr<BeanType> m_sharedInstance;
+};
+
+template <typename BeanType>
+class BeanCreator<BeanType, std::function<std::unique_ptr<BeanType>()>> {
+  public:
+    explicit BeanCreator(std::function<std::unique_ptr<BeanType>()> creator)
+        : m_creator(std::move(creator)), m_sharedInstance(nullptr) {}
+
+    std::shared_ptr<BeanType> GetShared() {
+        if (m_sharedInstance == nullptr) {
+            m_sharedInstance = m_creator();
+            if (m_sharedInstance == nullptr) {
+                throw std::runtime_error("Failed to create shared instance.");
+            }
+        }
+        return m_sharedInstance;
+    }
+
+    std::unique_ptr<BeanType> GetUnique() {
+        auto ptr = m_creator();
+        if (ptr == nullptr) {
+            throw std::runtime_error("Failed to create unique instance.");
+        }
+        return std::move(ptr);
+    }
+
+    void Reset() {
+        m_sharedInstance.reset();
+    }
+
+  private:
+    std::function<std::unique_ptr<BeanType>()> m_creator;
+    std::shared_ptr<BeanType> m_sharedInstance;
+};
+
+template <typename BeanType>
+class BeanCreator<BeanType, std::function<BeanType*()>> {
+  public:
+    explicit BeanCreator(std::function<BeanType*()> creator)
+        : m_creator(std::move(creator)), m_sharedInstance(nullptr) {}
+
+    std::shared_ptr<BeanType> GetShared() {
+        if (m_sharedInstance == nullptr) {
+            m_sharedInstance = m_creator();
+            if (m_sharedInstance == nullptr) {
+                throw std::runtime_error("Failed to create shared instance.");
+            }
+        }
+        return m_sharedInstance;
+    }
+
+    std::unique_ptr<BeanType> GetUnique() {
+        auto* ptr = m_creator();
+        if (ptr == nullptr) {
+            throw std::runtime_error("Failed to create unique instance.");
+        }
+        return std::unique_ptr<BeanType>(ptr);
+    }
+
+    void Reset() {
+        m_sharedInstance.reset();
+    }
+
+  private:
+    std::function<BeanType*()> m_creator;
     std::shared_ptr<BeanType> m_sharedInstance;
 };
 
